@@ -1,0 +1,3279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Marantan">
+<meta name="theme-color" content="#0078d4">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjMDA3OGQ0Ii8+PHRleHQgeD0iOTAiIHk9IjExNSIgZm9udC1zaXplPSI5MCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+OrzwvdGV4dD48L3N2Zz4=">
+<title>🎯 Método Marantan</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" onerror="window._chartjsError=true"></script>
+<style>
+:root {
+  --bg: #f0f0f0;
+  --surface: #ffffff;
+  --surface2: #f5f5f5;
+  --border: #d0d0d0;
+  --accent: #0078d4;
+  --accent2: #e74c3c;
+  --accent3: #5c2d91;
+  --gold: #c7760a;
+  --red: #c42b1c;
+  --text: #1a1a1a;
+  --muted: #6e6e6e;
+  --win-bg: rgba(0,120,212,0.07);
+  --loss-bg: rgba(196,43,28,0.07);
+  --inv-bg: rgba(199,118,10,0.10);
+}
+
+/* ── MODO ESCURO ── */
+body.dark-mode {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #22263a;
+  --border: #2e3347;
+  --accent: #3b9eff;
+  --accent2: #e74c3c;
+  --accent3: #9b72ff;
+  --gold: #f0a832;
+  --red: #ff5252;
+  --text: #e8eaf0;
+  --muted: #7a8099;
+  --win-bg: rgba(59,158,255,0.10);
+  --loss-bg: rgba(255,82,82,0.10);
+  --inv-bg: rgba(240,168,50,0.12);
+}
+body.dark-mode header { background: #0d1b2e; }
+body.dark-mode .bottom-nav { background: #0d1b2e; border-color: var(--border); }
+body.dark-mode .tab.active { background: var(--surface); }
+body.dark-mode .tabs { background: #0a0d14; border-color: var(--border); }
+body.dark-mode .kpi,
+body.dark-mode .objetivo-bar-wrap,
+body.dark-mode .table-wrap,
+body.dark-mode .rodada-box,
+body.dark-mode .hist-rodada-card,
+body.dark-mode .config-item { background: var(--surface); border-color: var(--border); }
+body.dark-mode .hist-rodada-header:hover { background: var(--surface2); }
+body.dark-mode .seq-card { background: var(--surface2); border-color: var(--border); }
+body.dark-mode .seq-card-operação { background: #1e2d45; border-color: #2a4060; color: #7ab8f5; }
+body.dark-mode select, body.dark-mode .seq-card-sel { background: var(--surface2); color: var(--text); border-color: var(--border); }
+body.dark-mode .config-input { background: var(--surface2); color: var(--text); border-color: var(--border); }
+body.dark-mode .pill-nuc { background: #1e2d45; border-color: #2a4060; }
+body.dark-mode .pill-saldo { background: var(--surface2); }
+body.dark-mode .hist-seq-mini { background: var(--surface2); }
+
+/* ══════════════════════════════════════════
+   MOBILE / iPHONE — Layout otimizado
+══════════════════════════════════════════ */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --tab-bar-h: 64px;
+}
+
+/* ── BOTTOM TAB BAR (mobile only) ── */
+.bottom-nav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+
+  /* Esconde tabs do topo, mostra bottom nav */
+  .tabs { display: none !important; }
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 800;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding-bottom: var(--sab);
+    height: calc(var(--tab-bar-h) + var(--sab));
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.10);
+  }
+  .bottom-nav-item {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 3px; padding: 8px 4px 4px;
+    cursor: pointer; border: none; background: none;
+    color: var(--muted); font-family: 'DM Sans', sans-serif;
+    font-size: 10px; font-weight: 500;
+    transition: color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .bottom-nav-item.active { color: var(--accent); }
+  .bottom-nav-item .nav-icon { font-size: 22px; line-height: 1; }
+  .bottom-nav-item .nav-label { font-size: 10px; }
+
+  /* Compensa o bottom nav no conteúdo */
+  .content {
+    padding: 12px 12px calc(var(--tab-bar-h) + var(--sab) + 16px) !important;
+  }
+
+  /* Header compacto */
+  header {
+    padding: 8px 14px !important;
+    padding-top: calc(var(--sat) + 8px) !important;
+  }
+  .logo { font-size: 14px !important; }
+  .header-objetivo { gap: 6px !important; }
+  .dark-toggle { padding: 5px 10px !important; font-size: 11px !important; }
+  button[onclick="panico()"] { padding: 5px 10px !important; font-size: 11px !important; }
+
+  /* Esconde botões Resumo e Backup do header — ficam no app */
+  .logout-btn { display: none !important; }
+
+  /* Banner do painel */
+  .painel-banner { padding: 16px 18px !important; }
+  .painel-banner-title { font-size: 16px !important; }
+  .painel-banner-capital { font-size: 22px !important; }
+
+  /* KPI grid — 2 colunas */
+  .kpi-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+  .kpi { padding: 12px 10px !important; }
+  .kpi-value { font-size: 17px !important; }
+  .kpi-label { font-size: 9px !important; }
+
+  /* Sequências — 2 colunas */
+  .rodada-cards-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+  .seq-card { padding: 10px 10px 8px !important; }
+  .seq-card-aposta { font-size: 14px !important; }
+
+  /* Botões W/L — maiores para toque */
+  .seq-card-sel {
+    min-height: 44px !important;
+    font-size: 15px !important;
+  }
+  .seq-card-operação { font-size: 15px !important; }
+
+  /* Botões de ação — altura mínima 48px (Apple HIG) */
+  .save-btn, .btn-modal, .rodada-submit-btn, .rodada-novo-btn,
+  button.save-btn, button.btn-modal {
+    min-height: 48px !important;
+    padding: 14px !important;
+    font-size: 14px !important;
+  }
+
+  /* Config — inputs sem zoom no iOS */
+  input[type="number"], input[type="text"], input[type="password"],
+  select, textarea {
+    font-size: 16px !important; /* iOS não dá zoom em >= 16px */
+  }
+
+  /* Config cards */
+  .cfg-cards-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+  .cfg-card { padding: 12px 10px !important; }
+
+  /* Tabelas com scroll */
+  .table-scroll-wrap, .hist-table-wrap, .table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Modais */
+  .modal-box {
+    padding: 24px 18px !important;
+    margin: 8px !important;
+    max-height: 92vh !important;
+    border-radius: 20px !important;
+  }
+
+  /* Histórico */
+  .hist-seq-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 6px !important; }
+
+  /* Stats bar */
+  #statBarLabel, #statBarLabelR { font-size: 10px !important; }
+
+  /* Progresso */
+  [style*="font-size:26px"] { font-size: 20px !important; }
+}
+
+@media (max-width: 400px) {
+  .kpi-value { font-size: 15px !important; }
+  .rodada-cards-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .cfg-cards-grid { grid-template-columns: 1fr 1fr !important; }
+}
+.dark-toggle {
+  background: rgba(255,255,255,0.18); border: none;
+  color: #fff; border-radius: 20px; padding: 6px 12px;
+  font-size: 13px; cursor: pointer; transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+}
+.dark-toggle:hover { background: rgba(255,255,255,0.28); }
+
+/* ── MODAL UNIVERSAL ── */
+.modal-overlay {
+  position:fixed; inset:0; z-index:2000;
+  background:rgba(0,0,0,0.45); backdrop-filter:blur(4px);
+  display:flex; align-items:center; justify-content:center;
+  padding:24px; opacity:0; pointer-events:none;
+  transition:opacity 0.25s;
+}
+.modal-overlay.open { opacity:1; pointer-events:all; }
+.modal-box {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:18px; padding:32px 36px; width:100%; max-width:560px;
+  box-shadow:0 24px 64px rgba(0,0,0,0.25); position:relative;
+  transform:translateY(24px); transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  max-height:88vh; overflow-y:auto;
+}
+.modal-overlay.open .modal-box { transform:translateY(0); }
+.modal-title {
+  font-family:'Syne',sans-serif; font-size:18px; font-weight:800;
+  color:var(--text); margin-bottom:6px;
+}
+.modal-sub { font-size:13px; color:var(--muted); margin-bottom:22px; }
+.modal-close {
+  position:absolute; top:16px; right:20px;
+  background:none; border:none; font-size:22px;
+  color:var(--muted); cursor:pointer; line-height:1;
+}
+.modal-close:hover { color:var(--red); }
+.modal-section { margin-bottom:16px; }
+.modal-section-title {
+  font-size:11px; font-weight:700; text-transform:uppercase;
+  letter-spacing:1px; color:var(--muted); margin-bottom:8px;
+}
+.modal-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 14px; background:var(--surface2); border-radius:8px;
+  margin-bottom:6px; font-size:13px;
+}
+.modal-row strong { font-family:'DM Mono',monospace; font-size:14px; }
+.modal-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:20px; }
+.btn-modal {
+  flex:1; padding:12px; border-radius:10px; border:none;
+  font-family:'Syne',sans-serif; font-size:13px; font-weight:700;
+  cursor:pointer; transition:all 0.2s; min-width:120px; text-align:center;
+}
+.btn-modal.primary   { background:var(--accent); color:#fff; }
+.btn-modal.primary:hover { background:#106ebe; }
+.btn-modal.secondary { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+.btn-modal.secondary:hover { border-color:var(--accent); color:var(--accent); }
+.btn-modal.success   { background:#27ae60; color:#fff; }
+.btn-modal.success:hover { background:#1e8449; }
+.btn-modal.danger    { background:rgba(196,43,28,0.1); color:var(--red); border:1px solid var(--red); }
+.btn-modal.danger:hover { background:var(--red); color:#fff; }
+
+/* ── ALERTA BLOQUEANTE ── */
+.alerta-overlay {
+  position: fixed; inset: 0; z-index: 9000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+.alerta-overlay.open { opacity: 1; pointer-events: all; }
+.alerta-overlay.tipo-stop  { background: rgba(140,0,0,0.82); }
+.alerta-overlay.tipo-objetivo { background: rgba(0,80,30,0.80); }
+.alerta-overlay.tipo-inv   { background: rgba(100,60,0,0.80); }
+
+.alerta-box {
+  background: #fff; border-radius: 20px;
+  padding: 36px 40px; width: 100%; max-width: 480px;
+  text-align: center;
+  transform: scale(0.88); transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.alerta-overlay.open .alerta-box { transform: scale(1); }
+body.dark-mode .alerta-box { background: #1a1d27; }
+
+.alerta-icone { font-size: 56px; margin-bottom: 12px; line-height: 1; }
+.alerta-titulo {
+  font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800;
+  margin-bottom: 10px; line-height: 1.2;
+}
+.alerta-titulo.stop    { color: #a01010; }
+.alerta-titulo.objetivo{ color: #0a6e30; }
+.alerta-titulo.inv     { color: #7a4500; }
+body.dark-mode .alerta-titulo.stop    { color: #ff5252; }
+body.dark-mode .alerta-titulo.objetivo{ color: #4cdb85; }
+body.dark-mode .alerta-titulo.inv     { color: #f0a832; }
+
+.alerta-msg {
+  font-size: 15px; line-height: 1.65; color: #333; margin-bottom: 24px;
+}
+body.dark-mode .alerta-msg { color: #c0c4d0; }
+
+.alerta-sub {
+  font-size: 12px; color: #888; margin-bottom: 28px; line-height: 1.5;
+  font-style: italic;
+}
+body.dark-mode .alerta-sub { color: #666; }
+
+.alerta-btn {
+  width: 100%; padding: 16px; border: none; border-radius: 12px;
+  font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800;
+  cursor: pointer; transition: all 0.15s; letter-spacing: 0.3px;
+  margin-bottom: 10px;
+}
+.alerta-btn.principal.stop     { background: #c42b1c; color: #fff; }
+.alerta-btn.principal.objetivo { background: #27ae60; color: #fff; }
+.alerta-btn.principal.inv      { background: #c7760a; color: #fff; }
+.alerta-btn.principal:hover    { filter: brightness(1.1); transform: translateY(-1px); }
+.alerta-btn.secundario {
+  background: transparent; color: #aaa;
+  border: 1px solid #ddd; font-size: 13px;
+  font-weight: 600; padding: 12px;
+}
+body.dark-mode .alerta-btn.secundario { border-color: #333; color: #666; }
+.alerta-btn.secundario:hover { color: #c42b1c; border-color: #c42b1c; }
+
+/* ── RESUMO DO DIA ── */
+.resumo-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px; }
+.resumo-kpi { background:var(--surface2); border-radius:10px; padding:14px; text-align:center; }
+.resumo-kpi-label { font-size:11px; color:var(--muted); margin-bottom:4px; }
+.resumo-kpi-val { font-family:'DM Mono',monospace; font-size:18px; font-weight:700; color:var(--accent); }
+
+/* ── BACKUP ── */
+.backup-area {
+  width:100%; font-family:'DM Mono',monospace; font-size:11px;
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:8px; padding:10px; resize:vertical; min-height:70px;
+  color:var(--muted); outline:none;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── BACKGROUND ── */
+body::before {
+  content:'';
+  position:fixed; inset:0; z-index:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 10%, rgba(0,120,212,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(92,45,145,0.03) 0%, transparent 60%);
+  pointer-events:none;
+}
+
+/* Login removido — estilos não necessários */
+
+/* ── MAIN APP ── */
+#app { display:none; position:relative; z-index:1; }
+
+/* ── HEADER ── */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 32px;
+  border-bottom: 1px solid var(--border);
+  background: #0078d4;
+  position: sticky; top:0; z-index: 100;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+.logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 17px; font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+.logo span { color: #cce4f7; }
+.header-objetivo {
+  display: flex; align-items: center; gap: 20px;
+  font-size: 13px; color: #cce4f7;
+}
+.header-capital {
+  font-family: 'DM Mono', monospace;
+  color: #ffffff;
+  font-size: 15px; font-weight: 600;
+}
+.logout-btn {
+  background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+  color: #ffffff; padding: 6px 14px; border-radius: 4px;
+  font-size: 12px; cursor: pointer; transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+}
+.logout-btn:hover { background: rgba(255,255,255,0.25); }
+
+/* ── TABS ── */
+.tabs {
+  display: flex; gap: 2px;
+  padding: 8px 32px 0;
+  border-bottom: 1px solid #c0c0c0;
+  background: #e8e8e8;
+}
+.tab {
+  padding: 8px 18px; border-radius: 4px 4px 0 0;
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: 1px solid transparent;
+  transition: all 0.15s; color: #5a5a5a;
+  border-bottom: none;
+}
+.tab:hover { color: #1a1a1a; background: rgba(255,255,255,0.6); }
+.tab.active {
+  background: #f0f0f0; color: #0078d4;
+  border-color: #c0c0c0;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: -1px;
+}
+
+/* ── CONTENT ── */
+.content { padding: 28px 32px; max-width: 1400px; margin: 0 auto; }
+.tab-panel { display:none; }
+.tab-panel.active { display:block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── KPI CARDS ── */
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px; margin-bottom: 28px;
+}
+.kpi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px; padding: 20px 22px;
+  transition: border-color 0.2s;
+  position: relative; overflow: hidden;
+}
+.kpi::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background: var(--kpi-color, var(--accent));
+}
+.kpi:hover { border-color: var(--kpi-color, var(--accent)); }
+.kpi-label { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+.kpi-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 24px; font-weight: 500;
+  color: var(--kpi-color, var(--accent));
+}
+.kpi-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+/* ── SECTION TITLES ── */
+.section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1.5px;
+  color: var(--muted); margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title::after {
+  content:''; flex:1; height:1px; background: var(--border);
+}
+
+/* ── CONFIG TABLES ── */
+.cfg-table-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 12px;
+}
+.cfg-table-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 18px; cursor: pointer; user-select: none;
+  background: linear-gradient(90deg, #0055a0, #0078d4);
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: #fff;
+  transition: background 0.2s;
+}
+.cfg-table-header:hover { background: linear-gradient(90deg, #004080, #0068c0); }
+.cfg-toggle-btn {
+  font-size: 13px; color: rgba(255,255,255,0.8);
+  transition: transform 0.25s;
+}
+.cfg-table {
+  width: 100%; border-collapse: collapse;
+}
+.cfg-table tr { border-bottom: 1px solid var(--border); }
+.cfg-table tr:last-child { border-bottom: none; }
+.cfg-table tr:nth-child(even) { background: var(--surface2); }
+.cfg-td-label {
+  padding: 12px 16px; font-family: 'Syne', sans-serif;
+  font-size: 12px; font-weight: 700; color: var(--text);
+  white-space: nowrap; width: 200px;
+}
+.cfg-td-desc {
+  padding: 12px 12px; font-size: 11px; color: var(--muted);
+}
+.cfg-td-input { padding: 8px 12px; width: 130px; }
+.cfg-td-unit {
+  padding: 8px 14px 8px 4px; font-size: 11px;
+  color: var(--muted); white-space: nowrap;
+}
+.cfg-table-input {
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 8px; padding: 8px 12px; color: var(--text);
+  font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 700;
+  text-align: center; width: 100%; outline: none;
+  transition: border-color 0.2s;
+}
+.cfg-table-input:focus { border-color: #0078d4; background: var(--surface); }
+body.dark-mode .cfg-table-input { background: var(--surface2); color: var(--text); }
+body.dark-mode .cfg-table-header { background: linear-gradient(90deg,#003060,#005090); }
+.cfg-section-title {
+  font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1.5px;
+  color: var(--muted); margin: 18px 0 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.cfg-section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+.cfg-cards-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 12px; margin-bottom: 16px;
+}
+.cfg-card {
+  background: var(--surface); border-radius: 14px;
+  padding: 16px 14px 14px; border: 1px solid var(--border);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  display: flex; flex-direction: column; gap: 4px;
+  position: relative; overflow: hidden;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.cfg-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--cfg-color, #0078d4);
+}
+.cfg-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.10); border-color: var(--cfg-color,#0078d4); }
+.cfg-card-icon { font-size: 22px; line-height: 1; margin-bottom: 2px; }
+.cfg-card-label {
+  font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700;
+  color: var(--cfg-color, #0078d4); text-transform: uppercase; letter-spacing: 0.5px;
+}
+.cfg-card-desc { font-size: 10px; color: var(--muted); margin-bottom: 6px; }
+.cfg-card-input {
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 8px; padding: 8px 10px; color: var(--text);
+  font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 700;
+  text-align: center; width: 100%; outline: none;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+.cfg-card-input:focus { border-color: var(--cfg-color, #0078d4); }
+.cfg-card-unit {
+  font-size: 10px; color: var(--muted); text-align: center; margin-top: 2px;
+}
+.cfg-card-total {
+  grid-column: 1 / -1;
+  background: #f0f7ff; border: 2px solid #0078d4;
+  border-radius: 12px; padding: 14px 18px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: #0078d4;
+}
+body.dark-mode .cfg-card { background: var(--surface); border-color: var(--border); }
+body.dark-mode .cfg-card-input { background: var(--surface2); color: var(--text); }
+body.dark-mode .cfg-card-total { background: #0f1e30; border-color: #3b9eff; }
+@media(max-width:700px){ .cfg-cards-grid { grid-template-columns: 1fr 1fr; } }
+
+.config-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 14px; margin-bottom: 24px;
+}
+@media(max-width:640px){.config-grid{grid-template-columns:1fr;}}
+.config-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px 18px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.config-label { font-size: 13px; color: var(--text); font-weight: 500; }
+.config-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.config-input {
+  background: var(--surface2); border: 1.5px solid var(--border);
+  color: var(--text); border-radius: 8px; padding: 8px 12px;
+  font-family: 'DM Mono', monospace; font-size: 15px;
+  text-align: right; width: 130px; outline: none;
+  transition: border-color 0.2s;
+}
+.config-input:focus { border-color: var(--accent); }
+.save-btn {
+  background: var(--accent); color: #0a0a0f;
+  border: none; padding: 12px 28px; border-radius: 10px;
+  font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+}
+.save-btn:hover { background: #00ffb3; transform: translateY(-1px); }
+
+/* ── REGISTRO TABLE ── */
+.table-wrap { overflow-x: auto; border-radius: 16px; border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; }
+thead tr {
+  background: var(--surface2);
+}
+th {
+  padding: 12px 14px;
+  font-family: 'Syne', sans-serif;
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1px;
+  color: var(--muted); text-align: center;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+td {
+  padding: 11px 14px; font-size: 13px; text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr.row-pos  { background: var(--win-bg); }
+tr.row-neg { background: var(--loss-bg); }
+tr.row-inv  { background: var(--inv-bg); }
+tr.row-objetivo { background: rgba(0,229,160,0.12); }
+
+.badge {
+  display:inline-block; padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; font-family: 'DM Mono', monospace;
+}
+.badge-p { background: rgba(0,229,160,0.15); color: var(--accent); }
+.badge-n { background: rgba(255,71,87,0.15); color: var(--red); }
+.badge-inv { background: rgba(255,209,102,0.15); color: var(--gold); }
+
+select, .sel {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); border-radius: 7px; padding: 5px 8px;
+  font-size: 12px; outline: none; cursor: pointer;
+  transition: border-color 0.2s;
+}
+select:focus { border-color: var(--accent); }
+.sel-retorno { min-width: 120px; }
+.sel-nado { min-width: 110px; }
+
+.action-text { font-size: 11px; white-space: nowrap; }
+.action-objetivo { color: var(--accent); font-weight: 700; }
+.action-inv  { color: var(--gold); font-weight: 700; }
+.action-loss { color: var(--accent2); }
+.action-win  { color: var(--accent); }
+.action-return { color: #74b9ff; }
+
+.mono { font-family: 'DM Mono', monospace; font-size: 13px; }
+.text-accent { color: var(--accent); }
+.text-red    { color: var(--red); }
+.text-gold   { color: var(--gold); }
+.text-blue   { color: #74b9ff; }
+.text-muted  { color: var(--muted); }
+
+/* NEXT OPERAÇÃO highlight */
+.next-operação {
+  font-family: 'DM Mono', monospace;
+  font-weight: 700; font-size: 14px;
+  color: #74b9ff;
+}
+
+/* ── ADD GAME BTN ── */
+.action-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
+}
+.add-btn {
+  background: var(--accent); color: #0a0a0f;
+  border: none; padding: 10px 22px; border-radius: 10px;
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; display:flex; align-items:center; gap:6px;
+}
+.add-btn:hover { background: #00ffb3; transform: translateY(-1px); }
+.reset-btn {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); padding: 10px 18px; border-radius: 10px;
+  font-size: 13px; cursor: pointer; transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+}
+.reset-btn:hover { border-color: var(--red); color: var(--red); }
+
+/* ── PROGRESS BAR OBJETIVO ── */
+.objetivo-bar-wrap {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 20px 24px; margin-bottom: 24px;
+}
+.objetivo-bar-label {
+  display:flex; justify-content:space-between; align-items:center;
+  font-size: 12px; color: var(--muted); margin-bottom: 10px;
+}
+.objetivo-bar-label span:last-child { color: var(--accent); font-weight: 700; }
+.objetivo-bar-bg {
+  height: 8px; background: var(--surface2); border-radius: 99px; overflow: hidden;
+}
+.objetivo-bar-fill {
+  height: 100%; border-radius: 99px;
+  background: linear-gradient(90deg, var(--accent3), var(--accent));
+  transition: width 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  min-width: 4px;
+}
+.objetivo-bar-fill.negative {
+  background: linear-gradient(90deg, #ff4757, #ff6b6b);
+}
+
+/* ── HISTÓRICO ── */
+.hist-table-wrap { overflow-x:auto; border-radius:16px; border:1px solid var(--border); }
+.hist-add-bar {
+  display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:16px;
+}
+.hist-input {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); border-radius: 8px; padding: 9px 12px;
+  font-family: 'DM Mono', monospace; font-size: 13px; outline:none;
+  transition: border-color 0.2s; width: 150px;
+}
+.hist-input:focus { border-color: var(--accent); }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 12px; padding: 14px 20px;
+  font-size: 13px; color: var(--accent);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  transform: translateY(80px); opacity:0;
+  transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events: none;
+}
+.toast.show { transform: translateY(0); opacity:1; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius:99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ══════════════════════════════════════════
+   REGISTRO — NOVO VISUAL CARD-BASED
+══════════════════════════════════════════ */
+
+/* ── Painel de lançamento ── */
+.rodada-box {
+  background: var(--surface);
+  border: 1.5px solid #0078d4;
+  border-radius: 14px;
+  padding: 20px 22px 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 16px rgba(0,120,212,0.10);
+}
+.rodada-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px; font-weight: 700;
+  color: #0078d4; text-transform: uppercase;
+  letter-spacing: 1px; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.rodada-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.seq-card {
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 12px 10px;
+  display: flex; flex-direction: column; gap: 7px;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  position: relative; overflow: hidden;
+}
+.seq-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--seq-color, #0078d4);
+  border-radius: 12px 12px 0 0;
+}
+.seq-card.card-p  { background: rgba(39,174,96,0.06);  border-color: #27ae60; --seq-color: #27ae60; }
+.seq-card.card-n  { background: rgba(196,43,28,0.06);  border-color: #c42b1c; --seq-color: #c42b1c; }
+.seq-card.card-inv{ background: rgba(199,118,10,0.08); border-color: #c7760a; --seq-color: #c7760a; }
+.seq-card-memo {
+  width: 100%; font-family: 'DM Sans', sans-serif; font-size: 11px;
+  background: #fffde7; border: 1px dashed #c7760a;
+  border-radius: 6px; padding: 5px 8px; resize: none;
+  color: #5a4000; outline: none; height: 28px;
+  transition: border-color 0.2s;
+}
+.seq-card-memo:focus { border-color: #0078d4; background: #fff; }
+body.dark-mode .seq-card-memo { background: #2a2510; border-color: #c7760a; color: #f0d080; }
+.seq-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.seq-card-num {
+  font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 700;
+  color: #fff; background: var(--seq-color, #0078d4);
+  border-radius: 20px; padding: 2px 8px; line-height: 1.4;
+}
+.seq-card-streak {
+  font-size: 10px; font-weight: 700; color: var(--red);
+  background: rgba(196,43,28,0.10); border-radius: 20px;
+  padding: 2px 7px; display: none;
+}
+.seq-card-streak.visible { display: inline-block; }
+.seq-card-nado {
+  font-size: 11px; font-weight: 800;
+  padding: 4px 10px; border-radius: 6px; text-align: center;
+  letter-spacing: 0.3px;
+}
+.lado-a { background: #fff3e0; color: #c7760a; border: 1px solid #ffe0a0; }
+.lado-b { background: #e8f8f0; color: #1a6e3a; border: 1px solid #a0dbb8; }
+.seq-card-operação {
+  font-family: 'DM Mono', monospace;
+  font-size: 16px; font-weight: 700;
+  color: var(--accent); text-align: center;
+  background: var(--win-bg); border-radius: 7px;
+  padding: 5px 8px; border: 1px solid var(--border);
+}
+.seq-card-info {
+  font-size: 10px; color: var(--muted); text-align: center;
+}
+.seq-card-sel {
+  background: #fff; border: 1.5px solid #d0d0d0;
+  color: #1a1a1a; border-radius: 7px; padding: 6px 8px;
+  font-size: 12px; outline: none; cursor: pointer;
+  width: 100%; transition: border-color 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center; padding-right: 24px;
+}
+.seq-card-sel:focus { border-color: #0078d4; }
+.seq-card-sel.sel-p { background-color: #e8f8f0; border-color: #27ae60; color: #1a6e3a; }
+.seq-card-sel.sel-n { background-color: #fdf0ef; border-color: #c42b1c; color: #7a1710; }
+.seq-card-pl {
+  font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 800;
+  text-align: center; line-height: 1;
+}
+.rodada-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 14px; border-top: 1px solid #e8e8e8; gap: 10px; flex-wrap: wrap;
+}
+.rodada-info {
+  font-size: 12px; color: var(--muted);
+  display: flex; gap: 16px; flex-wrap: wrap;
+}
+.rodada-info strong { color: var(--text); }
+.rodada-submit-btn {
+  background: #0078d4; color: #fff;
+  border: none; padding: 10px 24px; border-radius: 8px;
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+}
+.rodada-submit-btn:hover { background: #106ebe; transform: translateY(-1px); }
+.rodada-submit-btn:disabled { background: #a0c4e8; cursor: not-allowed; transform: none; }
+.rodada-novo-btn {
+  background: #f0f7ff; color: #0078d4;
+  border: 1.5px solid #0078d4; padding: 10px 18px; border-radius: 8px;
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+}
+.rodada-novo-btn:hover { background: #dceefa; }
+.rodada-realign-btn {
+  padding: 12px 20px;
+  background: #fff8e1;
+  color: #7a4500;
+  border: 1.5px solid #f0c040;
+  border-radius: 10px;
+  font-family: 'Syne', sans-serif;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; gap: 6px;
+}
+.rodada-realign-btn:hover { background: #fff0b0; border-color: #c7760a; transform: translateY(-1px); }
+body.dark-mode .rodada-realign-btn { background: #2a2000; color: #f0a832; border-color: #5a3e00; }
+body.dark-mode .rodada-realign-btn:hover { background: #3a2c00; }
+
+/* ── Histórico em cards colapsáveis ── */
+.hist-rodada-list { display: flex; flex-direction: column; gap: 10px; }
+.hist-rodada-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  transition: box-shadow 0.2s;
+}
+.hist-rodada-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.10); }
+.hist-rodada-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; cursor: pointer;
+  user-select: none;
+  border-left: 4px solid var(--rodada-color, #0078d4);
+}
+.hist-rodada-header:hover { background: #f7f9fc; }
+.hist-rodada-num {
+  font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 800;
+  color: var(--rodada-color, #0078d4); min-width: 56px;
+}
+.hist-rodada-pills {
+  display: flex; gap: 6px; flex-wrap: wrap; flex: 1;
+}
+.pill {
+  font-size: 11px; font-weight: 700; border-radius: 20px; padding: 3px 10px;
+  font-family: 'DM Mono', monospace;
+}
+.pill-p   { background: rgba(39,174,96,0.12);  color: #27ae60; }
+.pill-n   { background: rgba(196,43,28,0.12);  color: #c42b1c; }
+.pill-nuc { background: #f0f7ff; color: #005a9e; border: 1px solid #cce0f5; }
+.pill-saldo { background: #f5f5f5; color: var(--muted); font-size:10px; }
+.hist-rodada-toggle {
+  font-size: 14px; color: var(--muted); transition: transform 0.25s;
+  margin-left: auto;
+}
+.hist-rodada-toggle.open { transform: rotate(180deg); }
+.hist-rodada-body {
+  display: none; padding: 0 16px 14px;
+  border-top: 1px solid var(--border);
+}
+.hist-rodada-body.open { display: block; animation: fadeIn 0.2s ease; }
+.hist-seq-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px; margin-top: 12px;
+}
+.hist-seq-mini {
+  background: var(--surface2); border-radius: 8px;
+  padding: 8px 10px; font-size: 11px;
+  border-left: 3px solid var(--sq-color, #ccc);
+}
+.hist-seq-mini .sq-num { font-weight: 700; color: var(--sq-color); margin-bottom: 3px; font-size: 10px; }
+.hist-seq-mini .sq-wl  { font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 800; }
+.hist-seq-mini .sq-info{ color: var(--muted); font-size: 10px; margin-top: 2px; }
+
+/* ── BOTÕES DE RETORNO (substituem o select) ── */
+.seq-retorno-btns {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.seq-res-btn {
+  padding: 7px 4px; border-radius: 8px; border: 2px solid var(--border);
+  background: var(--surface2); color: var(--muted);
+  font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s; text-align: center;
+  line-height: 1.2;
+}
+.seq-res-btn:hover { border-color: var(--accent); color: var(--accent); background: #f0f7ff; }
+.seq-res-btn.ativo-w {
+  background: #e8f8f0; border-color: #27ae60;
+  color: #27ae60; box-shadow: 0 0 0 2px rgba(39,174,96,0.15);
+}
+.seq-res-btn.ativo-l {
+  background: #fdf0ef; border-color: #c42b1c;
+  color: #c42b1c; box-shadow: 0 0 0 2px rgba(196,43,28,0.15);
+}
+body.dark-mode .seq-res-btn { background: var(--surface2); color: var(--muted); border-color: var(--border); }
+body.dark-mode .seq-res-btn.ativo-w { background: rgba(39,174,96,0.15); }
+body.dark-mode .seq-res-btn.ativo-l { background: rgba(196,43,28,0.15); }
+.table-scroll-wrap {
+  max-height: 480px; overflow-y: auto;
+  border-radius: 10px; border: 1px solid var(--border);
+}
+.table-scroll-wrap thead th {
+  position: sticky; top: 0; z-index: 2; background: #e8eef5;
+}
+
+/* Responsive */
+@media(max-width:700px){
+  header { padding: 14px 16px; }
+  .content { padding: 16px; }
+  .tabs { padding: 12px 16px 0; overflow-x:auto; }
+  .tab { padding: 8px 14px; font-size:12px; white-space:nowrap; }
+  .rodada-cards-grid { grid-template-columns: repeat(auto-fill, minmax(130px,1fr)); }
+}
+</style>
+</head>
+<body>
+
+<!-- Login removido — acesso direto -->
+
+<!-- ── ALERTA BLOQUEANTE ── -->
+<div class="alerta-overlay" id="alertaOverlay">
+  <div class="alerta-box">
+    <div class="alerta-icone" id="alertaIcone">⛔</div>
+    <div class="alerta-titulo" id="alertaTitulo"></div>
+    <div class="alerta-msg"   id="alertaMsg"></div>
+    <div class="alerta-sub"   id="alertaSub"></div>
+    <button class="alerta-btn principal" id="alertaBtnPrincipal" onclick="fecharAlerta()"></button>
+    <button class="alerta-btn secundario" id="alertaBtnSecundario" onclick="fecharAlerta()">Ignorar e continuar mesmo assim</button>
+  </div>
+</div>
+
+<!-- ── MODAL REALINHAR ── -->
+<div class="modal-overlay" id="modalRealinhar">
+  <div class="modal-box" style="max-width:480px">
+    <button class="modal-close" onclick="fecharModal('modalRealinhar')">✕</button>
+    <div class="modal-title">⚖️ Realinhar Apostas</div>
+    <div class="modal-sub">O total apostado é mantido — apenas redistribuído igualmente entre as sequências ativas.</div>
+    <div id="modalRealinharBody" style="margin-bottom:20px"></div>
+    <div style="background:var(--surface2);border-radius:12px;padding:14px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:13px;color:var(--muted)">Total mantido</div>
+      <div style="font-family:'DM Mono',monospace;font-size:16px;font-weight:700;color:var(--text)" id="modalRealinharTotal">—</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#fff8e1,#fffde7);border:1.5px solid #f0c040;border-radius:12px;padding:14px 16px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:13px;color:#7a4500;font-weight:600">Novo valor por sequência</div>
+      <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:800;color:#7a4500" id="modalRealinharValor">—</div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-modal" style="flex:1;background:var(--surface2);color:var(--muted);border:1px solid var(--border)" onclick="fecharModal('modalRealinhar')">Cancelar</button>
+      <button class="btn-modal" id="modalRealinharBtn" style="flex:2;background:#c7760a;color:#fff;border:none">⚖️ Confirmar Realinhamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL RESUMO DO DIA ── -->
+<div class="modal-overlay" id="modalResumo">
+  <div class="modal-box">
+    <button class="modal-close" onclick="fecharModal('modalResumo')">✕</button>
+    <div class="modal-title">📋 Resumo do Dia</div>
+    <div class="modal-sub" id="resumoData">—</div>
+    <div class="resumo-grid" id="resumoKpis"></div>
+    <div class="modal-section">
+      <div class="modal-section-title">Retorno por Rodada</div>
+      <div id="resumoLotes"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal success" onclick="registrarDiaDoResumo()">✅ Registrar no Histórico</button>
+      <button class="btn-modal secondary" onclick="exportarCSV()">📄 Exportar CSV</button>
+      <button class="btn-modal secondary" onclick="exportarPDF()">🖨️ Exportar PDF</button>
+      <button class="btn-modal secondary" onclick="fecharModal('modalResumo')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL BACKUP ── -->
+<div class="modal-overlay" id="modalBackup">
+  <div class="modal-box" style="max-width:420px">
+    <button class="modal-close" onclick="fecharModal('modalBackup')">✕</button>
+    <div class="modal-title">💾 Backup & Restaurar</div>
+    <div class="modal-sub">Salve seus dados em um arquivo ou restaure a partir de um backup salvo.</div>
+
+    <!-- EXPORTAR -->
+    <div style="background:var(--surface2);border-radius:14px;padding:20px;margin-bottom:14px">
+      <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">⬇️ Salvar Backup</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.5">Gera um arquivo <code style="background:var(--surface);padding:1px 5px;border-radius:4px;font-size:11px">.json</code> com todos os seus dados. Guarde-o no iCloud ou Google Drive.</div>
+      <button onclick="baixarBackup()" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.15s">
+        💾 Baixar arquivo de backup
+      </button>
+    </div>
+
+    <!-- RESTAURAR -->
+    <div style="background:var(--surface2);border-radius:14px;padding:20px">
+      <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">📂 Restaurar Backup</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.5">Selecione o arquivo <code style="background:var(--surface);padding:1px 5px;border-radius:4px;font-size:11px">.json</code> salvo anteriormente. <strong style="color:#c42b1c">Atenção: sobrescreve todos os dados atuais.</strong></div>
+      <input type="file" id="backupFileInput" accept=".json" style="display:none" onchange="lerArquivoBackup(this)">
+      <button onclick="document.getElementById('backupFileInput').click()" style="width:100%;padding:14px;background:#fff8e1;color:#7a4500;border:1.5px solid #f0c040;border-radius:10px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.15s">
+        📂 Escolher arquivo de backup
+      </button>
+      <div id="backupFileNome" style="margin-top:10px;font-size:12px;color:var(--muted);text-align:center;min-height:18px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ APP ══════════════ -->
+<div id="app">
+  <header>
+    <div class="logo">🎯 <span>Método</span> Marantan</div>
+    <div class="header-objetivo">
+      <span>Capital hoje:</span>
+      <span class="header-capital" id="headerBanca">R$ 0,00</span>
+      <button class="dark-toggle" onclick="toggleDark()" id="darkBtn">🌙 Escuro</button>
+      <button class="logout-btn" onclick="abrirResumo()" style="background:rgba(255,255,255,0.18);color:#fff;border-color:rgba(255,255,255,0.3)">📋 Resumo</button>
+      <button class="logout-btn" onclick="abrirBackup()" style="background:rgba(255,255,255,0.18);color:#fff;border-color:rgba(255,255,255,0.3)">💾 Backup</button>
+      <button onclick="panico()" title="Fechar agora (ou pressione ESC 2x)" style="background:#c42b1c;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;letter-spacing:0.3px;transition:all 0.15s" onmouseover="this.style.background='#a01e14'" onmouseout="this.style.background='#c42b1c'">🚨 Fechar</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('painel')">📊 Painel</div>
+    <div class="tab" onclick="switchTab('registro')">📋 Registro</div>
+    <div class="tab" onclick="switchTab('historico')">📅 Histórico</div>
+    <div class="tab" onclick="switchTab('grafico')">📈 Gráfico</div>
+    <div class="tab" onclick="switchTab('config')">⚙️ Config</div>
+  </div>
+
+  <!-- ── BOTTOM NAV (mobile) ── -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="bottom-nav-item active" id="bnav-painel"   onclick="switchTab('painel')">
+      <span class="nav-icon">📊</span><span class="nav-label">Painel</span>
+    </button>
+    <button class="bottom-nav-item" id="bnav-registro"  onclick="switchTab('registro')">
+      <span class="nav-icon">📋</span><span class="nav-label">Registro</span>
+    </button>
+    <button class="bottom-nav-item" id="bnav-historico" onclick="switchTab('historico')">
+      <span class="nav-icon">📅</span><span class="nav-label">Histórico</span>
+    </button>
+    <button class="bottom-nav-item" id="bnav-grafico"   onclick="switchTab('grafico')">
+      <span class="nav-icon">📈</span><span class="nav-label">Gráfico</span>
+    </button>
+    <button class="bottom-nav-item" id="bnav-config"    onclick="switchTab('config')">
+      <span class="nav-icon">⚙️</span><span class="nav-label">Config</span>
+    </button>
+  </nav>
+
+  <!-- ════ PAINEL ════ -->
+  <div class="content">
+    <div id="tab-painel" class="tab-panel active">
+
+      <!-- BANNER TOPO -->
+      <div style="background:linear-gradient(135deg,#0055a0 0%,#0078d4 60%,#1a9fff 100%);border-radius:16px;padding:22px 28px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;box-shadow:0 4px 20px rgba(0,120,212,0.2)">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;letter-spacing:-0.5px">🎯 Método Marantan</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.75);margin-top:3px" id="painelDataHora">—</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:1px">Capital Atual</div>
+          <div style="font-family:'DM Mono',monospace;font-size:26px;font-weight:700;color:#fff" id="headerBanca2">R$ 0,00</div>
+        </div>
+      </div>
+
+      <!-- BARRA DE OBJETIVO — destaque principal -->
+      <div style="background:var(--surface);border-radius:16px;padding:20px 24px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,0.07)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div>
+            <span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:var(--text)">📊 Progresso do Objetivo</span>
+            <span id="kpiStatus" style="margin-left:10px;font-size:11px;color:var(--muted)">em andamento</span>
+          </div>
+          <span id="metaBarPct" style="font-family:'DM Mono',monospace;font-size:18px;font-weight:800;color:var(--accent)">0%</span>
+        </div>
+        <div style="height:16px;background:var(--surface2);border-radius:99px;overflow:hidden;box-shadow:inset 0 1px 4px rgba(0,0,0,0.08)">
+          <div id="metaBarFill" style="height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,#5c2d91,#0078d4);transition:width 0.6s cubic-bezier(0.34,1.56,0.64,1)"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:12px;color:var(--muted)">
+          <span>Início: <strong id="kpiBancaSub2" style="color:var(--text)">—</strong></span>
+          <span>Meta: <strong id="kpiMetaRef" style="color:var(--accent)">2%</strong></span>
+        </div>
+      </div>
+
+      <!-- KPIs FINANCEIROS — linha principal -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px" class="kpi-grid">
+        <div class="kpi" style="--kpi-color:var(--gold)">
+          <div class="kpi-label">💰 Capital Atual</div>
+          <div class="kpi-value" id="kpiBanca">R$ 0</div>
+          <div class="kpi-sub" id="kpiBancaSub">início do dia</div>
+        </div>
+        <div class="kpi" style="--kpi-color:#27ae60">
+          <div class="kpi-label">📈 Rendimento</div>
+          <div class="kpi-value" id="kpiLucro">R$ 0,00</div>
+          <div class="kpi-sub" id="kpiLucroSub">—</div>
+        </div>
+        <div class="kpi" style="--kpi-color:var(--accent3)">
+          <div class="kpi-label">% Rendimento</div>
+          <div class="kpi-value" id="kpiPct">0.00%</div>
+          <div class="kpi-sub">meta: <span id="kpiMetaRef2">2%</span></div>
+        </div>
+      </div>
+
+      <!-- KPIs OPERACIONAIS -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px" class="kpi-grid">
+        <div class="kpi" style="--kpi-color:#27ae60;padding:12px 10px">
+          <div class="kpi-label" style="font-size:9px">✅ Positivos</div>
+          <div class="kpi-value" style="font-size:22px" id="kpiWins">0</div>
+          <div class="kpi-sub" style="font-size:9px" id="kpiWinPct">taxa 0%</div>
+        </div>
+        <div class="kpi" style="--kpi-color:var(--red);padding:12px 10px">
+          <div class="kpi-label" style="font-size:9px">❌ Negativos</div>
+          <div class="kpi-value" style="font-size:22px" id="kpiLoss">0</div>
+          <div class="kpi-sub" style="font-size:9px" id="kpiStreak">ciclo: 0</div>
+        </div>
+        <div class="kpi" style="--kpi-color:var(--gold);padding:12px 10px">
+          <div class="kpi-label" style="font-size:9px">🔄 Trocas de Lado</div>
+          <div class="kpi-value" style="font-size:22px" id="kpiInv">0</div>
+          <div class="kpi-sub" style="font-size:9px">rebalanceamentos</div>
+        </div>
+        <div class="kpi" style="--kpi-color:var(--accent);padding:12px 10px">
+          <div class="kpi-label" style="font-size:9px">🎮 Operações</div>
+          <div class="kpi-value" style="font-size:22px" id="kpiJogos">0</div>
+          <div class="kpi-sub" style="font-size:9px">/ <span id="kpiLimite">50</span> limite</div>
+        </div>
+      </div>
+
+      <!-- PRÓXIMA OPERAÇÃO — destaque -->
+      <div style="background:var(--surface);border-radius:14px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 6px rgba(0,0,0,0.06)">
+        <div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px">🎲 Próxima Operação</div>
+          <div style="font-family:'DM Mono',monospace;font-size:28px;font-weight:700;color:var(--accent)" id="kpiProxima">R$ 0</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px" id="kpiProximaSub">—</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Lado sugerido</div>
+          <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--accent)" id="ladoSugerido2">—</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ════ REGISTRO ════ -->
+    <div id="tab-registro" class="tab-panel">
+
+      <!-- BARRA DE ACERTOS/ERROS — destacada -->
+      <div style="background:var(--surface);border-radius:14px;padding:16px 20px;margin-bottom:14px;box-shadow:0 2px 10px rgba(0,0,0,0.08);border:1px solid var(--border)">
+
+        <!-- Progresso do Objetivo — recolhível -->
+        <div style="margin-bottom:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          <div onclick="toggleProgresso()" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;background:var(--surface2);user-select:none">
+            <span style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--text)">📊 Progresso do Objetivo Diário</span>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span id="regMetaBarPct" style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--accent)">0%</span>
+              <span id="progressoToggleBtn" style="font-size:12px;color:var(--muted)">▲</span>
+            </div>
+          </div>
+          <div id="progressoContent" style="padding:12px 14px">
+            <div style="height:12px;background:var(--surface2);border-radius:99px;overflow:hidden;margin-bottom:8px;box-shadow:inset 0 1px 3px rgba(0,0,0,0.1)">
+              <div id="regMetaBarFill" style="height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,#5c2d91,#0078d4);transition:width 0.5s cubic-bezier(0.34,1.56,0.64,1)"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">
+              <span>Capital Inicial: <strong id="regKpiBancaSub" style="color:var(--text)">—</strong></span>
+              <span>Saldo Atual: <strong id="regKpiBancaAtual" style="font-family:'DM Mono',monospace;color:var(--accent)">—</strong></span>
+              <span>Objetivo: <strong id="regKpiMetaRef" style="color:var(--accent)">3%</strong></span>
+            </div>
+          </div>
+        </div>
+        <!-- Título + botão recolher -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">📊 Taxa de Acerto Acumulada</div>
+          <button onclick="toggleStatBox()" id="statBoxToggleBtn"
+            style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer;color:var(--muted);font-family:'DM Sans',sans-serif;transition:all 0.2s"
+            title="Recolher/Expandir">▲ Recolher</button>
+        </div>
+        <div id="statBoxContent">
+
+        <!-- Números grandes -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+          <div style="background:#e8f8f0;border-radius:10px;padding:10px;text-align:center;border:1px solid #a0dbb8">
+            <div style="font-size:10px;color:#27ae60;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">✅ Acertos</div>
+            <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:800;color:#27ae60" id="statWins">0</div>
+          </div>
+          <div style="background:#fdf0ef;border-radius:10px;padding:10px;text-align:center;border:1px solid #e8a09a">
+            <div style="font-size:10px;color:#c42b1c;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">❌ Erros</div>
+            <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:800;color:#c42b1c" id="statLoss">0</div>
+          </div>
+          <div style="background:#f0f7ff;border-radius:10px;padding:10px;text-align:center;border:1px solid #a0c4e8">
+            <div style="font-size:10px;color:#0078d4;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">🎯 Taxa</div>
+            <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:800;color:#0078d4" id="statTaxa">—</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center;border:1px solid var(--border)">
+            <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">📋 Total</div>
+            <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:800;color:var(--text)" id="statTotal">0</div>
+          </div>
+        </div>
+
+        <!-- Barra visual -->
+        <div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;margin-bottom:5px">
+            <span id="statBarLabel" style="color:#27ae60">✅ 0% acertos</span>
+            <span id="statBarLabelR" style="color:#c42b1c">❌ 0% erros</span>
+          </div>
+          <div style="height:12px;background:var(--surface2);border-radius:99px;overflow:hidden;display:flex;box-shadow:inset 0 1px 3px rgba(0,0,0,0.1)">
+            <div id="statBarWin" style="height:100%;background:linear-gradient(90deg,#1a8a4a,#27ae60);border-radius:99px 0 0 99px;transition:width 0.5s cubic-bezier(0.34,1.56,0.64,1);width:0%"></div>
+            <div id="statBarLoss" style="height:100%;background:linear-gradient(90deg,#c42b1c,#e74c3c);border-radius:0 99px 99px 0;transition:width 0.5s cubic-bezier(0.34,1.56,0.64,1);width:0%"></div>
+          </div>
+        </div>
+
+        <!-- Rodada atual + Média destacada -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:8px;padding:7px 12px;font-size:12px;color:var(--muted);flex:1">
+            <span style="font-weight:700">Rodada atual:</span>
+            <span>✅ <strong id="statCicloP" style="color:#27ae60;font-family:'DM Mono',monospace">0</strong></span>
+            <span>❌ <strong id="statCicloN" style="color:#c42b1c;font-family:'DM Mono',monospace">0</strong></span>
+            <span style="color:var(--border)">|</span>
+            <span>Taxa <strong id="statCicloTaxa" style="color:var(--accent);font-family:'DM Mono',monospace">—</strong></span>
+          </div>
+          <div style="background:linear-gradient(135deg,#5c2d91,#7c4dbd);border-radius:8px;padding:7px 16px;display:flex;align-items:center;gap:8px;min-width:180px">
+            <span style="font-size:16px">📊</span>
+            <div>
+              <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:rgba(255,255,255,0.7)">Média das Operações</div>
+              <div id="statMediaOp" style="font-family:'DM Mono',monospace;font-size:18px;font-weight:800;color:#fff">—</div>
+            </div>
+          </div>
+        </div>
+        </div><!-- /statBoxContent -->
+      </div>
+
+      <!-- RODADA DE OPERAÇÕES — TABELA -->
+      <div class="rodada-box" id="loteBox">
+        <div class="rodada-title">🎯 <span id="loteTitulo">Carregando...</span></div>
+
+        <!-- Tabela de lançamento -->
+        <div style="overflow-x:auto;border-radius:10px;border:1px solid var(--border);margin-bottom:12px">
+          <table style="width:100%;border-collapse:collapse">
+            <thead>
+              <tr style="background:#e8eef5">
+                <th style="padding:9px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);text-align:center;border-bottom:1px solid var(--border);white-space:nowrap">Seq</th>
+                <th style="padding:9px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);text-align:center;border-bottom:1px solid var(--border);white-space:nowrap">Letra</th>
+                <th style="padding:9px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);text-align:center;border-bottom:1px solid var(--border);white-space:nowrap">Lado</th>
+                <th style="padding:9px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);text-align:center;border-bottom:1px solid var(--border);white-space:nowrap">Operação (R$)</th>
+                <th style="padding:9px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);text-align:center;border-bottom:1px solid var(--border);white-space:nowrap">Resultado</th>
+                <th style="padding:9px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);text-align:center;border-bottom:1px solid var(--border);white-space:nowrap">P / N</th>
+              </tr>
+            </thead>
+            <tbody id="loteRows"></tbody>
+          </table>
+        </div>
+
+        <div class="rodada-footer">
+          <div class="rodada-info" id="loteInfo"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="rodada-novo-btn" onclick="novoLote()">🔄 Novo Rodada</button>
+            <button class="rodada-realign-btn" onclick="realinharApostas()" id="realinharBtn" title="Distribui o total apostado igualmente entre todas as sequências">⚖️ Realinhar Apostas</button>
+            <button class="rodada-submit-btn" id="loteSubmitBtn" onclick="confirmarLote()">✅ Confirmar Retornos</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- status + reset -->
+      <div class="action-bar">
+        <div style="font-size:13px;color:var(--muted)">
+          Ativo: <strong id="ladoSugerido" style="color:#0078d4">—</strong>
+          &nbsp;|&nbsp; Saldo atual: <strong id="proximaApostaBar" style="color:#005a9e;font-family:'DM Mono',monospace">—</strong>
+        </div>
+        <button class="reset-btn" onclick="resetDia()">🗑 Resetar Dia</button>
+      </div>
+
+      <!-- HISTÓRICO — CARDS COLAPSÁVEIS -->
+      <div class="section-title">📋 Histórico do Dia</div>
+      <div class="hist-rodada-list" id="jogosBody"></div>
+    </div>
+
+
+    <!-- ════ HISTÓRICO ════ -->
+    <div id="tab-historico" class="tab-panel">
+
+      <!-- Botão fechar etapa -->
+      <div style="background:linear-gradient(135deg,#0055a0,#0078d4);border-radius:14px;padding:18px 22px;margin-bottom:16px;box-shadow:0 4px 16px rgba(0,120,212,0.15)">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff">📊 Controle por Etapas</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:4px">Etapa atual: <strong id="etapaAtualNum" style="color:#fff">—</strong> &nbsp;|&nbsp; Capital atual: <strong id="etapaCapitalAtual" style="color:#fff;font-family:'DM Mono',monospace">—</strong></div>
+          </div>
+          <button onclick="fecharEtapa()" style="background:#fff;color:#0078d4;border:none;border-radius:10px;padding:12px 22px;font-family:'Syne',sans-serif;font-size:13px;font-weight:800;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='#e8f3fb'" onmouseout="this.style.background='#fff'">
+            ✅ Fechar Etapa & Iniciar Nova
+          </button>
+        </div>
+        <!-- KPIs da etapa atual -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px" id="etapaKpis"></div>
+      </div>
+
+      <!-- Campo manual de capital atualizado -->
+      <div style="background:var(--surface);border-radius:12px;padding:14px 18px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06);display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text)">💰 Fechar Etapa com valor manual:</div>
+        <div style="display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap">
+          <input type="number" id="capitalManual" placeholder="Capital final (R$)" step="0.10"
+            style="background:var(--surface2);border:1.5px solid #0078d4;border-radius:8px;padding:9px 12px;font-family:'DM Mono',monospace;font-size:14px;color:var(--text);outline:none;width:180px">
+          <button onclick="fecharEtapaManual()" style="background:#0078d4;color:#fff;border:none;border-radius:8px;padding:10px 18px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer">
+            ✅ Confirmar Valor
+          </button>
+          <span style="font-size:11px;color:var(--muted)">ou use o botão acima para fechar com o valor calculado automaticamente</span>
+        </div>
+      </div>
+
+      <!-- Tabela de etapas -->
+      <div class="section-title">📋 Histórico de Etapas</div>
+      <div class="hist-table-wrap">
+        <table>
+          <thead><tr>
+            <th>Etapa</th>
+            <th>Capital Início</th>
+            <th>Capital Final</th>
+            <th>Rendimento</th>
+            <th>%</th>
+            <th>Operações</th>
+            <th>P</th>
+            <th>N</th>
+            <th>Taxa</th>
+            <th>Duração</th>
+            <th>-</th>
+          </tr></thead>
+          <tbody id="histBody"></tbody>
+          <tfoot id="histFoot"></tfoot>
+        </table>
+      </div>
+    </div>
+
+
+    <!-- ════ CONFIG ════ -->
+    <div id="tab-config" class="tab-panel">
+
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Clique no título de cada seção para recolher ou expandir.</div>
+
+      <!-- ── 1. CAPITAL ── -->
+      <div class="cfg-table-box">
+        <div class="cfg-table-header" onclick="toggleCfg('cfgCapital')">
+          <span>💼 Composição do Capital</span>
+          <span class="cfg-toggle-btn" id="cfgCapitalBtn">▲</span>
+        </div>
+        <div id="cfgCapital">
+          <table class="cfg-table">
+            <tbody>
+              <tr>
+                <td class="cfg-td-label">🏦 Valor no Banco</td>
+                <td class="cfg-td-desc">Reserva fora da plataforma</td>
+                <td class="cfg-td-input"><input type="number" class="cfg-table-input" id="cfg_banco" value="0" step="0.10" oninput="atualizarCapitalTotal()"></td>
+                <td class="cfg-td-unit">R$</td>
+              </tr>
+              <tr>
+                <td class="cfg-td-label">🎯 Valor na Plataforma</td>
+                <td class="cfg-td-desc">Disponível para operar</td>
+                <td class="cfg-td-input"><input type="number" class="cfg-table-input" id="cfg_plataforma" value="1000" step="0.10" oninput="atualizarCapitalTotal()"></td>
+                <td class="cfg-td-unit">R$</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px;border-top:1px solid var(--border)">
+            <div style="background:#f0f7ff;border:2px solid #0078d4;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
+              <span style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:#0078d4">💰 Capital Total</span>
+              <span id="capitalTotalDisplay" style="font-family:'DM Mono',monospace;font-size:18px;font-weight:800;color:#0078d4">R$ 1.000,00</span>
+            </div>
+            <div style="background:#f0faf5;border:2px solid #27ae60;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
+              <span style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:#27ae60">🎯 Capital + Objetivo</span>
+              <span id="capitalMetaDisplay" style="font-family:'DM Mono',monospace;font-size:18px;font-weight:800;color:#27ae60">R$ 1.030,00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 2. OPERAÇÕES ── -->
+      <div class="cfg-table-box">
+        <div class="cfg-table-header" onclick="toggleCfg('cfgOperacoes')">
+          <span>📊 Parâmetros das Operações</span>
+          <span class="cfg-toggle-btn" id="cfgOperacoesBtn">▲</span>
+        </div>
+        <div id="cfgOperacoes">
+          <table class="cfg-table">
+            <tbody>
+              <tr>
+                <td class="cfg-td-label">📈 Operação Base</td>
+                <td class="cfg-td-desc">% do capital por jogo</td>
+                <td class="cfg-td-input"><input type="number" class="cfg-table-input" id="cfg_base_pct" value="1" step="0.1"></td>
+                <td class="cfg-td-unit">%</td>
+              </tr>
+              <tr>
+                <td class="cfg-td-label">🎲 Odd Média</td>
+                <td class="cfg-td-desc">Odd do ativo escolhido</td>
+                <td class="cfg-td-input"><input type="number" class="cfg-table-input" id="cfg_odd" value="1.83" step="0.01"></td>
+                <td class="cfg-td-unit">×</td>
+              </tr>
+              <tr>
+                <td class="cfg-td-label">🏆 Objetivo Diário</td>
+                <td class="cfg-td-desc">Rendimento alvo para encerrar</td>
+                <td class="cfg-td-input"><input type="number" class="cfg-table-input" id="cfg_meta_pct" value="3" step="0.5"></td>
+                <td class="cfg-td-unit">%</td>
+              </tr>
+              <tr>
+                <td class="cfg-td-label">⛔ Stop Loss</td>
+                <td class="cfg-td-desc">Parar ao perder X% do capital</td>
+                <td class="cfg-td-input"><input type="number" class="cfg-table-input" id="cfg_stop_loss" value="10" step="1" min="1"></td>
+                <td class="cfg-td-unit">%</td>
+              </tr>
+              <tr>
+                <td class="cfg-td-label">🔒 Teto por Operação</td>
+                <td class="cfg-td-desc">Valor máximo por aposta (0 = sem teto)</td>
+                <td class="cfg-td-input"><input type="number" class="cfg-table-input" id="cfg_teto_aposta" value="5" step="0.5" min="0"></td>
+                <td class="cfg-td-unit">%</td>
+              </tr>
+              <tr>
+                <td class="cfg-td-label">⛔ Limite Diário</td>
+                <td class="cfg-td-desc">Máximo de operações por dia</td>
+                <td class="cfg-td-input"><input type="number" class="cfg-table-input" id="cfg_limite" value="50"></td>
+                <td class="cfg-td-unit">jogos</td>
+              </tr>
+              <tr>
+                <td class="cfg-td-label">📉 Incremento Negativo</td>
+                <td class="cfg-td-desc">Aumento após perda</td>
+                <td class="cfg-td-input"><input type="number" class="cfg-table-input" id="cfg_incr" value="15" step="5"></td>
+                <td class="cfg-td-unit">%</td>
+              </tr>
+              <tr>
+                <td class="cfg-td-label">📈 Incremento Positivo</td>
+                <td class="cfg-td-desc">Aumento após ganho</td>
+                <td class="cfg-td-input"><input type="number" class="cfg-table-input" id="cfg_incr_ganho" value="10" step="5"></td>
+                <td class="cfg-td-unit">%</td>
+              </tr>
+              <tr>
+                <td class="cfg-td-label">🔄 Gatilho Rebalanceamento</td>
+                <td class="cfg-td-desc">Negativos para trocar lado</td>
+                <td class="cfg-td-input"><input type="number" class="cfg-table-input" id="cfg_gatilho" value="3"></td>
+                <td class="cfg-td-unit">neg.</td>
+              </tr>
+              <tr>
+                <td class="cfg-td-label">↩️ Retorno Pós-Ciclo</td>
+                <td class="cfg-td-desc">% da última operação após ciclo neg.</td>
+                <td class="cfg-td-input"><input type="number" class="cfg-table-input" id="cfg_retorno" value="50" step="5"></td>
+                <td class="cfg-td-unit">%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── 3. RODADA ── -->
+      <div class="cfg-table-box">
+        <div class="cfg-table-header" onclick="toggleCfg('cfgRodada')">
+          <span>🎮 Configuração da Rodada</span>
+          <span class="cfg-toggle-btn" id="cfgRodadaBtn">▲</span>
+        </div>
+        <div id="cfgRodada">
+          <table class="cfg-table">
+            <tbody>
+              <tr>
+                <td class="cfg-td-label">🎮 Jogos por Rodada</td>
+                <td class="cfg-td-desc">Operações simultâneas (1 a 20)</td>
+                <td class="cfg-td-input"><input type="number" class="cfg-table-input" id="cfg_lote_qtd" value="10" min="1" max="20"></td>
+                <td class="cfg-td-unit">seqs</td>
+              </tr>
+              <tr>
+                <td class="cfg-td-label">🔤 Identificadores</td>
+                <td class="cfg-td-desc">2=A/B · 3=A/B/C · até 5</td>
+                <td class="cfg-td-input"><input type="number" class="cfg-table-input" id="cfg_letras_qtd" value="2" min="2" max="5"></td>
+                <td class="cfg-td-unit">letras</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── 4. ATIVO ── -->
+      <div class="cfg-table-box">
+        <div class="cfg-table-header" onclick="toggleCfg('cfgAtivo')">
+          <span>🎯 Ativo & Opções</span>
+          <span class="cfg-toggle-btn" id="cfgAtivoBtn">▲</span>
+        </div>
+        <div id="cfgAtivo">
+          <table class="cfg-table">
+            <tbody>
+              <tr>
+                <td class="cfg-td-label">📋 Nome do Ativo</td>
+                <td class="cfg-td-desc">Ex: Ambos Marcam, Total de Gols...</td>
+                <td class="cfg-td-input" colspan="2"><input type="text" class="cfg-table-input" id="cfg_mercado" value="Ambos Marcam" style="text-align:left;letter-spacing:0"></td>
+              </tr>
+              <tr>
+                <td class="cfg-td-label" style="color:#27ae60">✅ Opção A</td>
+                <td class="cfg-td-desc">Primeira opção de operação</td>
+                <td class="cfg-td-input" colspan="2"><input type="text" class="cfg-table-input" id="cfg_opcao_a" value="Ambos NÃO" style="text-align:left;letter-spacing:0;border-color:#27ae60"></td>
+              </tr>
+              <tr>
+                <td class="cfg-td-label" style="color:#c42b1c">❌ Opção B</td>
+                <td class="cfg-td-desc">Segunda opção de operação</td>
+                <td class="cfg-td-input" colspan="2"><input type="text" class="cfg-table-input" id="cfg_opcao_b" value="Ambos SIM" style="text-align:left;letter-spacing:0;border-color:#c42b1c"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <button class="save-btn" onclick="saveConfig()">💾 Salvar Configurações</button>
+
+      <!-- ── 5. SEGURANÇA ── -->
+      <div class="cfg-table-box" style="margin-top:16px">
+        <div class="cfg-table-header" onclick="toggleCfg('cfgSenha')">
+          <span>🔐 Segurança</span>
+          <span class="cfg-toggle-btn" id="cfgSenhaBtn">▲</span>
+        </div>
+        <div id="cfgSenha">
+          <table class="cfg-table">
+            <tbody>
+              <tr>
+                <td class="cfg-td-label">🔑 Nova Senha</td>
+                <td class="cfg-td-desc">Mínimo 3 caracteres</td>
+                <td class="cfg-td-input" colspan="2"><input type="password" class="cfg-table-input" id="newPwd" placeholder="nova senha" style="text-align:left;letter-spacing:2px"></td>
+              </tr>
+              <tr>
+                <td class="cfg-td-label">🔑 Confirmar Senha</td>
+                <td class="cfg-td-desc">Repita a nova senha</td>
+                <td class="cfg-td-input" colspan="2"><input type="password" class="cfg-table-input" id="confirmPwd" placeholder="confirme" style="text-align:left;letter-spacing:2px"></td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="padding:12px 16px;border-top:1px solid var(--border)">
+            <button class="save-btn secondary" onclick="savePwd()" style="width:auto;padding:10px 24px">🔐 Alterar Senha</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- ════ GRÁFICO ════ -->
+    <div id="tab-grafico" class="tab-panel">
+
+      <!-- Controle de quantidade de eventos -->
+      <div style="background:var(--surface);border-radius:14px;padding:14px 20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06);display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text)">📈 Projetar para:</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="number" id="grafEtapas" value="100" min="10" max="500" step="10"
+            style="background:var(--surface2);border:1.5px solid #0078d4;border-radius:8px;padding:8px 12px;font-family:'DM Mono',monospace;font-size:16px;font-weight:700;color:#0078d4;outline:none;width:100px;text-align:center">
+          <span style="font-size:13px;color:var(--muted);font-weight:500">etapas</span>
+          <button onclick="renderGrafico()" style="background:#0078d4;color:#fff;border:none;border-radius:8px;padding:9px 20px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer">
+            🔄 Atualizar
+          </button>
+        </div>
+        <div style="font-size:11px;color:var(--muted)">Mín: 10 · Máx: 500 · Use múltiplos de 10 para melhor visualização</div>
+      </div>
+
+      <!-- KPIs do gráfico -->
+      <div class="kpi-grid" style="margin-bottom:20px">
+        <div class="kpi" style="--kpi-color:var(--accent)">
+          <div class="kpi-label">🏦 Capital Inicial</div>
+          <div class="kpi-value" id="gBancaInicial">—</div>
+          <div class="kpi-sub" id="gDataInicio">—</div>
+        </div>
+        <div class="kpi" style="--kpi-color:var(--gold)">
+          <div class="kpi-label">📅 Etapas Registradas</div>
+          <div class="kpi-value" id="gDiasReais">0</div>
+          <div class="kpi-sub" id="gDiasReaisSub">de 100 projetadas</div>
+        </div>
+        <div class="kpi" style="--kpi-color:#27ae60">
+          <div class="kpi-label" id="gMeta100Label">🎯 Objetivo em 100 etapas</div>
+          <div class="kpi-value" id="gMeta100">—</div>
+          <div class="kpi-sub" id="gMeta100pct">com <span id="gMetaPctDia">3</span>%/etapa</div>
+        </div>
+        <div class="kpi" style="--kpi-color:var(--accent3)">
+          <div class="kpi-label">📈 Capital Atual Real</div>
+          <div class="kpi-value" id="gBancaAtual">—</div>
+          <div class="kpi-sub" id="gDiferencaMeta">vs projeção</div>
+        </div>
+      </div>
+
+      <!-- Gráfico -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+          <div class="section-title" style="margin-bottom:0;flex:1">📈 Crescimento da Capital — Real vs Projeção</div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px">
+              <input type="checkbox" id="chkProjecao" checked onchange="renderGrafico()"> Projeção (objetivo)
+            </label>
+            <label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px">
+              <input type="checkbox" id="chkCenarioOtimista" onchange="renderGrafico()"> Cenário +50%
+            </label>
+            <label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px">
+              <input type="checkbox" id="chkCenarioConservador" onchange="renderGrafico()"> Cenário -50%
+            </label>
+          </div>
+        </div>
+        <div style="position:relative;height:380px">
+          <canvas id="graficoCrescimento"></canvas>
+        </div>
+      </div>
+
+      <!-- Tabela resumida de projeção -->
+      <div class="section-title">📋 Marcos da Projeção (a cada 10 dias)</div>
+      <div class="table-scroll-wrap">
+        <table>
+          <thead><tr>
+            <th>Etapa</th>
+            <th>Objetivo (R$)</th>
+            <th>Cenário +50% (R$)</th>
+            <th>Cenário -50% (R$)</th>
+            <th>Real (R$)</th>
+            <th>Dif. vs Objetivo</th>
+          </tr></thead>
+          <tbody id="tabelaProjecao"></tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:16px;padding:14px 18px;background:#f0f7ff;border:1px solid #cce0f5;border-radius:10px;font-size:12px;color:var(--muted);line-height:1.7">
+        <strong style="color:var(--accent)">ℹ️ Como ler o gráfico:</strong><br>
+        🔵 <strong>Linha azul</strong> = capital real (dados do histórico)<br>
+        🟢 <strong>Linha verde</strong> = projeção com objetivo de <span id="gLegendaMeta">3</span>% ao dia por 100 dias<br>
+        🟡 <strong>Cenário +50%</strong> = se render 50% acima da objetivo diária<br>
+        🔴 <strong>Cenário -50%</strong> = se render 50% abaixo da objetivo diária<br>
+        A projeção começa no primeiro dia do histórico e se estende até o dia 100.
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Captura qualquer erro JS e mostra na tela de login
+window.onerror = function(msg, src, line) {
+  console.error('Erro JS linha ' + line + ': ' + msg);
+  return false;
+};
+
+// ════════════════════════════════════════════
+// ESTADO GLOBAL
+// ════════════════════════════════════════════
+const DEFAULT_CFG = {
+  capital: 500, banco: 0, plataforma: 500,
+  base_pct: 0.5, odd: 1.83, meta_pct: 2,
+  limite: 50, incr: 15, incr_ganho: 10, gatilho: 3, retorno: 50, lote_qtd: 6, letras_qtd: 2,
+  stop_loss: 8, teto_aposta: 3,
+  ativo: 'Ambos Marcam', opcao_a: 'Ambos NÃO', opcao_b: 'Ambos SIM'
+};
+const DEFAULT_PWD = "123";
+
+function loadState() {
+  try {
+    return {
+      cfg:          JSON.parse(localStorage.getItem('esm_cfg')  || JSON.stringify(DEFAULT_CFG)),
+      seqs:         JSON.parse(localStorage.getItem('esm_seqs') || 'null') || [],
+      historico:    JSON.parse(localStorage.getItem('esm_hist') || '[]'),
+      lote_num:     parseInt(localStorage.getItem('esm_lotenum') || '1'),
+      etapa_inicio: localStorage.getItem('esm_etapa_inicio') || new Date().toISOString(),
+      // BUG 3 fix: carregar senha do localStorage
+      pwd:          localStorage.getItem('esm_pwd') || DEFAULT_PWD,
+    };
+  } catch(e) {
+    return { cfg: {...DEFAULT_CFG}, seqs: [], historico: [], lote_num: 1, etapa_inicio: new Date().toISOString(), pwd: DEFAULT_PWD };
+  }
+}
+function saveState() {
+  localStorage.setItem('esm_cfg',          JSON.stringify(STATE.cfg));
+  localStorage.setItem('esm_seqs',         JSON.stringify(STATE.seqs));
+  localStorage.setItem('esm_hist',         JSON.stringify(STATE.historico));
+  localStorage.setItem('esm_lotenum',      STATE.lote_num);
+  localStorage.setItem('esm_etapa_inicio', STATE.etapa_inicio || new Date().toISOString());
+  // BUG 3 fix: persistir senha
+  if (STATE.pwd) localStorage.setItem('esm_pwd', STATE.pwd);
+}
+let STATE = loadState();
+
+function ensureSeqs() {
+  const qtd = STATE.cfg.lote_qtd || 10;
+  while (STATE.seqs.length < qtd) STATE.seqs.push([]);
+}
+
+function calcSaldoGlobal() {
+  const cfg = STATE.cfg;
+  let saldo = cfg.capital;
+  STATE.seqs.forEach(seq => {
+    seq.forEach(j => {
+      if (j.wl === 'P') saldo += j.operação * (cfg.odd - 1);
+      else if (j.wl === 'N') saldo -= j.operação;
+    });
+  });
+  return saldo;
+}
+
+function totalJogosGeral() {
+  return STATE.seqs.reduce((acc, s) => acc + s.length, 0);
+}
+
+// ════════════════════════════════════════════
+// LOGIN
+// ════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function() {
+  // Fecha modais ao clicar fora
+  document.querySelectorAll('.modal-overlay').forEach(el => {
+    el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+  });
+});
+
+// Inicia o app assim que o DOM estiver pronto — independente do Chart.js
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('app').style.display = 'block';
+  renderAll();
+});
+
+function doLogout() { /* sem login, logout não faz nada */ }
+
+// ════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const tabs = ['painel','registro','historico','grafico','config'];
+    t.classList.toggle('active', tabs[i] === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'tab-'+name);
+  });
+  // Sincroniza bottom nav mobile
+  document.querySelectorAll('.bottom-nav-item').forEach(b => {
+    b.classList.toggle('active', b.id === 'bnav-'+name);
+  });
+  if (name === 'painel')    renderPainel();
+  if (name === 'registro')  renderRegistro();
+  if (name === 'historico') renderHistorico();
+  if (name === 'grafico')   renderGrafico();
+  if (name === 'config')    renderConfig();
+}
+
+// ════════════════════════════════════════════
+// LÓGICA DO MÉTODO — POR SEQUÊNCIA
+// ════════════════════════════════════════════
+function getStreak(seq) {
+  let s = 0;
+  for (let i = seq.length - 1; i >= 0; i--) {
+    if (seq[i].wl === 'N') s++; else break;
+  }
+  return s;
+}
+function getStreakAt(seq, idx) {
+  let s = 0;
+  for (let i = idx; i >= 0; i--) {
+    if (seq[i].wl === 'N') s++; else break;
+  }
+  return s;
+}
+// Arredonda para o múltiplo de 0.10 mais próximo (ex: 3.54 → 3.50, 3.56 → 3.60)
+function arred50(val) {
+  return Math.round(val * 10) / 10;
+}
+
+function computeProxApostaSeq(seq, cfg) {
+  const base      = arred50(cfg.capital * (cfg.base_pct / 100));
+  const incrGanho = (cfg.incr_ganho || 0) / 100;
+  // Teto absoluto em reais (% do capital)
+  const teto = cfg.teto_aposta > 0 ? arred50(cfg.capital * (cfg.teto_aposta / 100)) : Infinity;
+
+  if (!seq.length) return Math.min(base, teto);
+  const last = seq[seq.length - 1];
+  if (!last.wl || last.wl === '') return Math.min(last.operação, teto);
+
+  if (last.wl === 'P') {
+    const prevStreak = seq.length >= 2 ? getStreakAt(seq, seq.length - 2) : 0;
+    if (prevStreak >= 1) {
+      const retorno = arred50(last.operação * (cfg.retorno / 100));
+      return Math.min(Math.max(retorno, base), teto);
+    }
+    if (incrGanho > 0) {
+      return Math.min(arred50(last.operação * (1 + incrGanho)), teto);
+    }
+    return Math.min(base, teto);
+  }
+
+  // Negativo: incrementa, nunca abaixo da base, nunca acima do teto
+  const incrementado = arred50(last.operação * (1 + cfg.incr / 100));
+  return Math.min(Math.max(incrementado, base), teto);
+}
+function getLadoSeq(seq, cfg) {
+  const opcA = cfg.opcao_a || 'Ambos NÃO';
+  const opcB = cfg.opcao_b || 'Ambos SIM';
+  if (!seq.length) return opcA;
+  const streak = getStreak(seq);
+  const last = seq[seq.length - 1];
+  if (streak >= cfg.gatilho) {
+    return last.lado === opcA ? opcB : opcA;
+  }
+  return last.lado || opcA;
+}
+
+// ════════════════════════════════════════════
+// RENDER PAINEL
+// ════════════════════════════════════════════
+function renderPainel() {
+  const cfg = STATE.cfg;
+  ensureSeqs();
+
+  let totalW = 0, totalL = 0, totalInv = 0;
+  STATE.seqs.forEach(seq => {
+    seq.forEach((j, i) => {
+      if (j.wl === 'P') totalW++;
+      else if (j.wl === 'N') totalL++;
+      if (i > 0 && seq[i-1] && j.lado !== seq[i-1].lado) totalInv++;
+    });
+  });
+  const total    = totalW + totalL;
+  const saldo    = calcSaldoGlobal();
+  const rendimento    = saldo - cfg.capital;
+  const pctDia   = rendimento / cfg.capital * 100;
+  const metaR    = cfg.capital * (cfg.meta_pct / 100);
+  const progPct  = Math.max(0, Math.min(100, (rendimento / metaR) * 100));
+  const maxStreak= STATE.seqs.reduce((acc, s) => Math.max(acc, getStreak(s)), 0);
+  const baseVal  = cfg.capital * (cfg.base_pct / 100);
+
+  // Header banca (dois lugares agora)
+  document.getElementById('headerBanca').textContent = fmt(saldo);
+  const hb2 = document.getElementById('headerBanca2');
+  if (hb2) hb2.textContent = fmt(saldo);
+
+  // Data e hora no banner
+  const dhEl = document.getElementById('painelDataHora');
+  if (dhEl) {
+    const agora = new Date();
+    dhEl.textContent = agora.toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'long'})
+      + ' · ' + agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+  }
+
+  // Banca sub secundário
+  const bs2 = document.getElementById('kpiBancaSub2');
+  if (bs2) bs2.textContent = fmt(cfg.capital);
+
+  // Meta ref secundário
+  const mr2 = document.getElementById('kpiMetaRef2');
+  if (mr2) mr2.textContent = cfg.meta_pct.toFixed(1) + '%';
+
+  // Objetivo bar
+  document.getElementById('metaBarPct').textContent = progPct.toFixed(1) + '%';
+  const fill = document.getElementById('metaBarFill');
+  fill.style.width = Math.max(0, Math.min(100, Math.abs(progPct))) + '%';
+  fill.className = 'objetivo-bar-fill' + (rendimento < 0 ? ' negative' : '');
+
+  // KPIs
+  document.getElementById('kpiBanca').textContent    = fmt(saldo);
+  document.getElementById('kpiBancaSub').textContent = 'início: ' + fmt(cfg.capital);
+  document.getElementById('kpiLucro').textContent    = (rendimento >= 0 ? '+' : '') + fmt(rendimento);
+  document.getElementById('kpiLucro').style.color    = rendimento >= 0 ? 'var(--accent)' : 'var(--red)';
+  document.getElementById('kpiLucroSub').textContent = Math.abs(pctDia).toFixed(1) + '% da objetivo (' + cfg.meta_pct + '%)';
+  document.getElementById('kpiPct').textContent      = (pctDia >= 0 ? '+' : '') + pctDia.toFixed(2) + '%';
+  document.getElementById('kpiPct').style.color      = pctDia >= cfg.meta_pct ? 'var(--accent)' : pctDia < 0 ? 'var(--red)' : 'var(--accent3)';
+  document.getElementById('kpiMetaRef').textContent  = cfg.meta_pct.toFixed(1) + '%';
+  document.getElementById('kpiMetaRef2').textContent = cfg.meta_pct.toFixed(1) + '%';
+  document.getElementById('kpiProxima').textContent  = fmt(baseVal);
+  document.getElementById('kpiProximaSub').textContent = 'por operação';
+  document.getElementById('kpiWins').textContent     = totalW;
+  document.getElementById('kpiWinPct').textContent   = 'taxa ' + (total ? (totalW/total*100).toFixed(0) : 0) + '%';
+  document.getElementById('kpiLoss').textContent     = totalL;
+  document.getElementById('kpiStreak').textContent   = 'max seq: ' + maxStreak;
+  document.getElementById('kpiInv').textContent      = totalInv;
+  document.getElementById('kpiJogos').textContent    = totalJogosGeral() + ' / ';
+  document.getElementById('kpiLimite').textContent   = cfg.limite;
+  const status = pctDia >= cfg.meta_pct ? '🏆 OBJETIVO ATINGIDO - PARE!'
+               : totalJogosGeral() >= cfg.limite ? '⛔ LIMITE DE JOGOS'
+               : '▶️ Rodada #' + STATE.lote_num;
+  document.getElementById('kpiStatus').textContent   = status;
+
+  // Lado sugerido — atualiza os dois elementos (header e painel)
+  const ladoTxt = calcLadoSugerido();
+  const ladoEl  = document.getElementById('ladoSugerido');
+  const ladoEl2 = document.getElementById('ladoSugerido2');
+  if (ladoEl)  ladoEl.textContent  = ladoTxt;
+  if (ladoEl2) ladoEl2.textContent = ladoTxt;
+}
+
+// ════════════════════════════════════════════
+// RODADA — SEQUÊNCIAS PARALELAS INDEPENDENTES
+// ════════════════════════════════════════════
+let LOTE_PENDENTE = [];
+
+function initLote() {
+  ensureSeqs();
+  LOTE_PENDENTE = [];
+  const cfg     = STATE.cfg;
+  const loteQtd = cfg.lote_qtd || 10;
+
+  // Gera distribuição aleatória GARANTINDO todas as letras pelo menos 1x
+  const letrasDisponiveis = 'ABCDE'.slice(0, cfg.letras_qtd || 2).split('');
+  const distribuicaoAB = [];
+
+  // 1. Garante 1 de cada letra (embaralhado)
+  const base = [...letrasDisponiveis].sort(() => Math.random() - 0.5);
+
+  // 2. Preenche o restante aleatoriamente (sem repetir consecutiva)
+  let ultimaLetra = '';
+  // Primeiro coloca as obrigatórias
+  for (let i = 0; i < loteQtd; i++) {
+    if (i < base.length) {
+      distribuicaoAB.push(base[i]);
+      ultimaLetra = base[i];
+    } else {
+      const opcoes = letrasDisponiveis.filter(l => l !== ultimaLetra);
+      const escolhida = opcoes[Math.floor(Math.random() * opcoes.length)];
+      distribuicaoAB.push(escolhida);
+      ultimaLetra = escolhida;
+    }
+  }
+
+  // 3. Embaralha o array final garantindo sem consecutivos iguais
+  // Fisher-Yates com restrição de consecutivos
+  for (let i = distribuicaoAB.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    // Só troca se não criar consecutivos
+    const vizAntes = i > 0 ? distribuicaoAB[i-1] : null;
+    const vizDepois = i < distribuicaoAB.length-1 ? distribuicaoAB[i+1] : null;
+    if (distribuicaoAB[j] !== vizAntes && distribuicaoAB[j] !== vizDepois) {
+      [distribuicaoAB[i], distribuicaoAB[j]] = [distribuicaoAB[j], distribuicaoAB[i]];
+    }
+  }
+
+  for (let i = 0; i < loteQtd; i++) {
+    const seq     = STATE.seqs[i] || [];
+    const operação = computeProxApostaSeq(seq, cfg);
+    const lado    = getLadoSeq(seq, cfg);
+    LOTE_PENDENTE.push({
+      pos: i,
+      lado,
+      operação: +operação.toFixed(2),
+      retorno: '',
+      seq_len: seq.length,
+      label_ab: distribuicaoAB[i],  // 'A' ou 'B' — identificador visual
+    });
+  }
+  renderLote();
+}
+
+function renderLote() {
+  const cfg     = STATE.cfg;
+  const loteQtd = cfg.lote_qtd || 10;
+  const opcA    = cfg.opcao_a || 'Ambos NÃO';
+  const opcB    = cfg.opcao_b || 'Ambos SIM';
+  const ativo = cfg.ativo || 'Ativo';
+  const qtd     = LOTE_PENDENTE.length;
+  const preench = LOTE_PENDENTE.filter(p => p.retorno).length;
+
+  document.getElementById('loteTitulo').textContent =
+    qtd === 0 ? 'Limite atingido' : `Rodada #${STATE.lote_num} · ${ativo} · ${loteQtd} ciclos`;
+
+  const grid = document.getElementById('loteRows');
+  grid.innerHTML = '';
+
+  if (qtd === 0) {
+    grid.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;font-size:13px">⛔ Limite de jogos do dia atingido.</td></tr>';
+  }
+
+  const letraColors = { A:'#0078d4', B:'#c7760a', C:'#27ae60', D:'#5c2d91', E:'#c42b1c' };
+
+  LOTE_PENDENTE.forEach((item, i) => {
+    const wl      = item.lado && item.retorno ? (item.lado === item.retorno ? 'P' : 'N') : '';
+    const seq     = STATE.seqs[i] || [];
+    const streak  = getStreak(seq);
+    const isOpcA  = item.lado === opcA;
+    const letraCor = letraColors[item.label_ab] || '#0078d4';
+
+    const tr = document.createElement('tr');
+    const bg = i % 2 === 0 ? 'var(--surface)' : 'var(--surface2)';
+    if      (wl === 'P') tr.style.background = 'rgba(39,174,96,0.07)';
+    else if (wl === 'N') tr.style.background = streak >= cfg.gatilho ? 'rgba(199,118,10,0.08)' : 'rgba(196,43,28,0.07)';
+    else                 tr.style.background = bg;
+
+    // Seq
+    const tdSeq = document.createElement('td');
+    tdSeq.style.cssText = 'padding:8px 12px;text-align:center;border-bottom:1px solid rgba(0,0,0,0.04)';
+    tdSeq.innerHTML = `<span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--muted)">${i+1}</span>`;
+    tr.appendChild(tdSeq);
+
+    // Letra + streak (negativos consecutivos com fonte grande)
+    const tdLetra = document.createElement('td');
+    tdLetra.style.cssText = 'padding:8px 12px;text-align:center;border-bottom:1px solid rgba(0,0,0,0.04)';
+    tdLetra.innerHTML = `<span style="background:${letraCor};color:#fff;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;border-radius:20px;padding:3px 10px">${item.label_ab}</span>`
+      + (streak > 0 ? `<div style="color:#c42b1c;font-family:'DM Mono',monospace;font-size:22px;font-weight:800;line-height:1;margin-top:3px">🔴 ${streak}</div>` : '');
+    tr.appendChild(tdLetra);
+
+    // Lado
+    const tdLado = document.createElement('td');
+    tdLado.style.cssText = 'padding:8px 12px;text-align:center;border-bottom:1px solid rgba(0,0,0,0.04)';
+    tdLado.innerHTML = `<span style="background:${isOpcA?'#fff8e1':'#e8f8f0'};color:${isOpcA?'#c7760a':'#1a6e3a'};border:1px solid ${isOpcA?'#ffe0a0':'#a0dbb8'};border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap">${item.lado}</span>`;
+    tr.appendChild(tdLado);
+
+    // Operação — indica visualmente quando o teto foi atingido
+    const tdOp = document.createElement('td');
+    tdOp.style.cssText = 'padding:8px 12px;text-align:center;border-bottom:1px solid rgba(0,0,0,0.04)';
+    const teto = cfg.teto_aposta > 0 ? arred50(cfg.capital * (cfg.teto_aposta / 100)) : Infinity;
+    const noTeto = teto !== Infinity && item.operação >= teto - 0.01;
+    tdOp.innerHTML = `<span style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:${noTeto?'#c42b1c':'var(--accent)'}">${fmt(item.operação)}</span>`
+      + (noTeto ? `<div style="font-size:9px;color:#c42b1c;font-weight:700;margin-top:2px">🔒 TETO</div>` : '');
+    tr.appendChild(tdOp);
+
+    // Resultado — dois botões
+    const tdRes = document.createElement('td');
+    tdRes.style.cssText = 'padding:6px 10px;border-bottom:1px solid rgba(0,0,0,0.04)';
+    const btnWrap = document.createElement('div');
+    btnWrap.style.cssText = 'display:flex;gap:6px';
+
+    const btnA = document.createElement('button');
+    btnA.style.cssText = `padding:5px 10px;border-radius:6px;border:1.5px solid;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;background:${item.retorno===opcA?'#e8f8f0':'#f5f5f5'};border-color:${item.retorno===opcA?'#27ae60':'#d0d0d0'};color:${item.retorno===opcA?'#1a6e3a':'var(--muted)'}`;
+    btnA.textContent = (item.retorno === opcA ? '✅ ' : '') + opcA;
+    btnA.onclick = function() { LOTE_PENDENTE[i].retorno = LOTE_PENDENTE[i].retorno === opcA ? '' : opcA; renderLote(); };
+
+    const btnB = document.createElement('button');
+    btnB.style.cssText = `padding:5px 10px;border-radius:6px;border:1.5px solid;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;background:${item.retorno===opcB?'#fdf0ef':'#f5f5f5'};border-color:${item.retorno===opcB?'#c42b1c':'#d0d0d0'};color:${item.retorno===opcB?'#7a1710':'var(--muted)'}`;
+    btnB.textContent = (item.retorno === opcB ? '❌ ' : '') + opcB;
+    btnB.onclick = function() { LOTE_PENDENTE[i].retorno = LOTE_PENDENTE[i].retorno === opcB ? '' : opcB; renderLote(); };
+
+    btnWrap.appendChild(btnA); btnWrap.appendChild(btnB);
+    tdRes.appendChild(btnWrap);
+    tr.appendChild(tdRes);
+
+    // P/N
+    const tdPN = document.createElement('td');
+    tdPN.style.cssText = 'padding:8px 12px;text-align:center;border-bottom:1px solid rgba(0,0,0,0.04)';
+    tdPN.innerHTML = wl
+      ? `<span style="font-family:'DM Mono',monospace;font-size:16px;font-weight:800;color:${wl==='P'?'#27ae60':'#c42b1c'}">${wl}</span>`
+      : '<span style="color:#ccc">—</span>';
+    tr.appendChild(tdPN);
+
+    grid.appendChild(tr);
+  });
+
+  const infoEl = document.getElementById('loteInfo');
+  infoEl.innerHTML = `<span>Preenchidos: <strong>${preench}/${qtd}</strong></span>
+    <span>Ativo: <strong>${ativo}</strong></span>
+    <span>Rodada: <strong>#${STATE.lote_num}</strong></span>`;
+
+  const btn = document.getElementById('loteSubmitBtn');
+  btn.disabled = preench === 0;
+  btn.textContent = preench > 0 ? `✅ Confirmar ${preench} retorno${preench > 1 ? 's' : ''}` : '✅ Confirmar Retornos';
+}
+
+function confirmarLote() {
+  const preench = LOTE_PENDENTE.filter(p => p.retorno);
+  if (!preench.length) { showToast('⚠️ Preencha pelo menos um retorno!'); return; }
+  ensureSeqs();
+
+  // Salva cada retorno confirmado na ciclo correta
+  LOTE_PENDENTE.forEach(item => {
+    if (!item.retorno) return;
+    const wl = item.lado === item.retorno ? 'P' : 'N';
+    STATE.seqs[item.pos].push({
+      lado: item.lado, retorno: item.retorno,
+      operação: item.operação, wl, rodada: STATE.lote_num
+    });
+  });
+
+  // Avança o número do rodada sempre que confirmar
+  STATE.lote_num++;
+  saveState();
+
+  // Recalcula o próximo rodada com base nos novos retornos
+  // (aplica incremento nas negativos, rebalanceamento, retorno suavizado, etc.)
+  initLote();
+  verificarAlertas();
+  renderRegistro();
+  renderPainel();
+  showToast(`✅ ${preench.length} retorno(s) confirmado(s)! Rodada #${STATE.lote_num} pronto.`);
+}
+
+function novoLote() {
+  const semRes  = LOTE_PENDENTE.filter(p => !p.retorno);
+  const comRes  = LOTE_PENDENTE.filter(p => p.retorno);
+
+  if (comRes.length > 0 && semRes.length > 0) {
+    // Tem alguns preenchidos e alguns não — confirma os preenchidos
+    if (!confirm(`${semRes.length} ciclo(s) sem retorno. Confirmar as preenchidas e gerar novo rodada?`)) return;
+    confirmarLote(); // já chama initLote() internamente
+  } else if (comRes.length > 0) {
+    // Todos preenchidos — confirma tudo
+    confirmarLote(); // já chama initLote() internamente
+  } else {
+    // Nenhum preenchido — apenas gera novo rodada sem confirmar
+    STATE.lote_num++;
+    saveState();
+    initLote();
+    showToast('🔄 Rodada #' + STATE.lote_num + ' gerado!');
+  }
+}
+
+
+// ════════════════════════════════════════════
+// RENDER REGISTRO — cards colapsáveis por rodada
+// ════════════════════════════════════════════
+function renderRegistro() {
+  const cfg     = STATE.cfg;
+  const loteQtd = cfg.lote_qtd || 10;
+  const opcA    = cfg.opcao_a || 'Ambos NÃO';
+  const opcB    = cfg.opcao_b || 'Ambos SIM';
+  ensureSeqs();
+
+  const saldo = calcSaldoGlobal();
+  // Atualiza barra de acertos/erros
+  let totalP = 0, totalN = 0;
+  // Acumulado geral
+  STATE.seqs.forEach(seq => seq.forEach(j => {
+    if (j.wl === 'P') totalP++; else if (j.wl === 'N') totalN++;
+  }));
+  const totalOps = totalP + totalN;
+  const pctP = totalOps ? (totalP / totalOps * 100) : 0;
+  const pctN = totalOps ? (totalN / totalOps * 100) : 0;
+  document.getElementById('statWins').textContent      = totalP;
+  document.getElementById('statLoss').textContent      = totalN;
+  document.getElementById('statTotal').textContent     = totalOps;
+  document.getElementById('statTaxa').textContent      = totalOps ? pctP.toFixed(1) + '%' : '—';
+  document.getElementById('statBarWin').style.width    = pctP.toFixed(1) + '%';
+  document.getElementById('statBarLoss').style.width   = pctN.toFixed(1) + '%';
+  document.getElementById('statBarLabel').textContent  = '✅ ' + pctP.toFixed(1) + '% acertos';
+  document.getElementById('statBarLabelR').textContent = '❌ ' + pctN.toFixed(1) + '% erros';
+
+  // Ciclo atual (rodada atual = lote_num em curso)
+  const cicloAtual = STATE.lote_num;
+  let cicloP = 0, cicloN = 0;
+  STATE.seqs.forEach(seq => {
+    // BUG 2 fix: propriedade correta é 'rodada', não 'lote'
+    seq.filter(j => j.rodada === cicloAtual).forEach(j => {
+      if (j.wl === 'P') cicloP++; else if (j.wl === 'N') cicloN++;
+    });
+  });
+  const cicloTotal = cicloP + cicloN;
+  document.getElementById('statCicloP').textContent    = cicloP;
+  document.getElementById('statCicloN').textContent    = cicloN;
+  document.getElementById('statCicloTaxa').textContent = cicloTotal ? (cicloP/cicloTotal*100).toFixed(0)+'%' : '—';
+
+  // Média dos valores do lote atual (cards visíveis no momento)
+  const valsLote = LOTE_PENDENTE.map(item => item.operação).filter(v => v > 0);
+  const media = valsLote.length > 0
+    ? valsLote.reduce((a, b) => a + b, 0) / valsLote.length
+    : null;
+  document.getElementById('statMediaOp').textContent = media !== null ? fmt(media) : '—';
+
+  document.getElementById('ladoSugerido').textContent     = cfg.ativo || 'Ativo';
+  document.getElementById('proximaApostaBar').textContent = fmt(saldo);
+
+  // BUG 1 fix: declarar lucro corretamente
+  const lucro = saldo - cfg.capital;
+  // Barra de progresso do objetivo (replicada do painel)
+  const progPct   = cfg.capital > 0 ? Math.min(100, (lucro / (cfg.capital * cfg.meta_pct / 100)) * 100) : 0;
+  document.getElementById('regMetaBarPct').textContent     = progPct.toFixed(1) + '%';
+  document.getElementById('regMetaBarFill').style.width    = Math.min(100, progPct) + '%';
+  document.getElementById('regMetaBarFill').style.background = progPct >= 100
+    ? 'linear-gradient(90deg,#27ae60,#1a8a4a)'
+    : 'linear-gradient(90deg,#5c2d91,#0078d4)';
+  document.getElementById('regKpiBancaSub').textContent    = fmt(cfg.capital);
+  document.getElementById('regKpiBancaAtual').textContent  = fmt(saldo);
+  document.getElementById('regKpiMetaRef').textContent     = cfg.meta_pct + '%';
+
+  const container = document.getElementById('jogosBody');
+  container.innerHTML = '';
+  // AVISO 3 fix: reduce para evitar stack overflow com arrays grandes
+  const maxLotes = STATE.seqs.reduce((acc, s) => Math.max(acc, s.length), 0);
+
+  if (maxLotes === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--muted);background:#fff;border-radius:14px;border:1px solid var(--border)">
+      <div style="font-size:32px;margin-bottom:10px">🎯</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">Nenhum jogo registrado ainda</div>
+      <div style="font-size:13px">Use o painel de rodada acima para lançar suas operações</div>
+    </div>`;
+    recalcLoteIndep(); renderLote(); return;
+  }
+
+  let saldoAcum = cfg.capital;
+  for (let loteIdx = 0; loteIdx < maxLotes; loteIdx++) {
+    let wins = 0, losses = 0, lucroLote = 0;
+    const seqResults = [];
+    for (let s = 0; s < loteQtd; s++) {
+      const seq = STATE.seqs[s] || [];
+      const j   = seq[loteIdx];
+      if (!j) { seqResults.push(null); continue; }
+      if (j.wl === 'P') { wins++; lucroLote += j.operação * (cfg.odd - 1); }
+      else if (j.wl === 'N') { lucroLote -= j.operação; losses++; }
+      seqResults.push(j);
+    }
+    saldoAcum += lucroLote;
+    const loteColor = lucroLote > 0 ? '#27ae60' : lucroLote < 0 ? '#c42b1c' : '#0078d4';
+
+    const card = document.createElement('div');
+    card.className = 'hist-rodada-card';
+    card.style.setProperty('--rodada-color', loteColor);
+
+    const header = document.createElement('div');
+    header.className = 'hist-rodada-header';
+    header.innerHTML = `
+      <div class="hist-rodada-num">RODADA #${loteIdx + 1}</div>
+      <div class="hist-rodada-pills">
+        <span class="pill pill-p">✅ ${wins}W</span>
+        <span class="pill pill-n">❌ ${losses}L</span>
+        <span class="pill pill-nuc">${lucroLote >= 0 ? '+' : ''}${fmt(lucroLote)}</span>
+        <span class="pill pill-saldo">Saldo: ${fmt(saldoAcum)}</span>
+      </div>
+      <div class="hist-rodada-toggle ${loteIdx === maxLotes - 1 ? 'open' : ''}" id="toggle-${loteIdx}">▼</div>`;
+    header.onclick = () => toggleLoteCard(loteIdx);
+    card.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'hist-rodada-body' + (loteIdx === maxLotes - 1 ? ' open' : '');
+    body.id = `body-${loteIdx}`;
+
+    const seqGrid = document.createElement('div');
+    seqGrid.className = 'hist-seq-grid';
+
+    seqResults.forEach((j, s) => {
+      const mini = document.createElement('div');
+      mini.className = 'hist-seq-mini';
+      if (!j) {
+        mini.style.setProperty('--sq-color', '#ccc');
+        mini.innerHTML = `<div class="sq-num">SEQ ${s+1}</div><div style="color:var(--muted);font-size:12px">—</div>`;
+      } else {
+        const sqColor  = j.wl === 'P' ? '#27ae60' : j.wl === 'N' ? '#c42b1c' : '#ccc';
+        mini.style.setProperty('--sq-color', sqColor);
+        const streak   = getStreakAt(STATE.seqs[s] || [], loteIdx);
+        const ladoStr  = (j.lado === opcA ? opcA : opcB).substring(0, 9);
+        const resStr   = (j.retorno === opcA ? opcA : j.retorno === opcB ? opcB : '—').substring(0, 9);
+        mini.innerHTML = `
+          <div class="sq-num">SEQ ${s+1} ${streak > 0 ? '🔴'+streak : ''}</div>
+          <div class="sq-wl" style="color:${sqColor}">${j.wl || '—'}</div>
+          <div class="sq-info">${ladoStr} → ${resStr}</div>
+          <div class="sq-info" style="font-family:'DM Mono',monospace;color:#005a9e;font-weight:700">${fmt(j.operação)}</div>`;
+      }
+      seqGrid.appendChild(mini);
+    });
+
+    body.appendChild(seqGrid);
+    card.appendChild(body);
+    container.appendChild(card);
+  }
+  recalcLoteIndep(); renderLote();
+}
+
+function toggleLoteCard(idx) {
+  const body = document.getElementById(`body-${idx}`);
+  const tog  = document.getElementById(`toggle-${idx}`);
+  if (!body) return;
+  body.classList.toggle('open');
+  tog && tog.classList.toggle('open');
+}
+
+function recalcLoteIndep() {
+  const cfg = STATE.cfg;
+  ensureSeqs();
+  LOTE_PENDENTE.forEach((item, i) => {
+    const seq = STATE.seqs[i] || [];
+    if (!item.retorno) {
+      item.operação = +computeProxApostaSeq(seq, cfg).toFixed(2);
+      item.lado   = getLadoSeq(seq, cfg);
+    }
+    item.seq_len = seq.length;
+  });
+}
+
+function resetDia() {
+  if (!confirm('Resetar TODAS as ciclos e começar do zero?\n(O histórico semanal não será afetado)')) return;
+  STATE.seqs     = [];
+  STATE.lote_num = 1;
+  saveState(); ensureSeqs(); initLote(); renderRegistro(); renderPainel();
+  showToast('🗑 Dia resetado!');
+}
+
+
+// ════════════════════════════════════════════
+// HISTÓRICO POR ETAPAS
+// ════════════════════════════════════════════
+function fecharEtapaManual() {
+  const input = document.getElementById('capitalManual');
+  const valor = parseFloat(input.value);
+  if (!valor || valor <= 0) { showToast('⚠️ Digite o capital final antes de confirmar!'); return; }
+
+  const cfg = STATE.cfg;
+  let totalP = 0, totalN = 0;
+  STATE.seqs.forEach(seq => seq.forEach(j => {
+    if (j.wl === 'P') totalP++; else if (j.wl === 'N') totalN++;
+  }));
+  const totalOps = totalP + totalN;
+  if (totalOps === 0) { showToast('⚠️ Nenhuma operação nesta etapa!'); return; }
+
+  const rend = valor - cfg.capital;
+  const pct  = (rend / cfg.capital * 100);
+  if (!confirm(`Fechar Etapa #${STATE.historico.length + 1} com capital manual?\n\nCapital inicial: ${fmt(cfg.capital)}\nCapital final (manual): ${fmt(valor)}\nRendimento: ${rend>=0?'+':''}${fmt(rend)} (${pct>=0?'+':''}${pct.toFixed(2)}%)\nOperações: ${totalOps} (${totalP}P / ${totalN}N)`)) return;
+
+  STATE.historico.push({
+    num:         STATE.historico.length + 1,
+    capital_ini: cfg.capital,
+    capital_fim: +valor.toFixed(2),
+    ops:         totalOps, positivos: totalP, negativos: totalN,
+    inicio:      STATE.etapa_inicio || new Date().toISOString(),
+    fim:         new Date().toISOString(),
+  });
+
+  STATE.cfg.capital  = +valor.toFixed(2);
+  STATE.seqs         = [];
+  STATE.lote_num     = 1;
+  STATE.etapa_inicio = new Date().toISOString();
+  input.value        = '';
+
+  saveState(); ensureSeqs(); initLote(); renderHistorico(); renderPainel();
+  showToast(`✅ Etapa #${STATE.historico.length} fechada! Capital: ${fmt(valor)}`);
+}
+
+function fecharEtapa() {
+  const cfg   = STATE.cfg;
+  const saldo = calcSaldoGlobal();
+  const lucro = saldo - cfg.capital;
+  const pct   = (lucro / cfg.capital * 100);
+  let totalP = 0, totalN = 0;
+  STATE.seqs.forEach(seq => seq.forEach(j => {
+    if (j.wl === 'P') totalP++; else if (j.wl === 'N') totalN++;
+  }));
+  const totalOps = totalP + totalN;
+  if (totalOps === 0) { showToast('⚠️ Nenhuma operação nesta etapa!'); return; }
+  if (!confirm(`Fechar Etapa #${STATE.historico.length + 1}?\n\nCapital: ${fmt(cfg.capital)} → ${fmt(saldo)}\nRendimento: ${lucro>=0?'+':''}${fmt(lucro)} (${pct>=0?'+':''}${pct.toFixed(2)}%)\nOperações: ${totalOps} (${totalP}P / ${totalN}N)\n\nO capital final será o novo capital inicial da próxima etapa.`)) return;
+
+  STATE.historico.push({
+    num:         STATE.historico.length + 1,
+    capital_ini: cfg.capital,
+    capital_fim: +saldo.toFixed(2),
+    ops:         totalOps,
+    positivos:   totalP,
+    negativos:   totalN,
+    inicio:      STATE.etapa_inicio || new Date().toISOString(),
+    fim:         new Date().toISOString(),
+  });
+
+  STATE.cfg.capital  = +saldo.toFixed(2);
+  STATE.seqs         = [];
+  STATE.lote_num     = 1;
+  STATE.etapa_inicio = new Date().toISOString();
+
+  saveState(); ensureSeqs(); initLote(); renderHistorico(); renderPainel();
+  showToast(`✅ Etapa #${STATE.historico.length} fechada! Novo capital: ${fmt(saldo)}`);
+}
+
+function renderHistorico() {
+  const cfg   = STATE.cfg;
+  const saldo = calcSaldoGlobal();
+  const lucro = saldo - cfg.capital;
+  const pct   = (lucro / cfg.capital * 100);
+  let totalP = 0, totalN = 0;
+  STATE.seqs.forEach(seq => seq.forEach(j => {
+    if (j.wl === 'P') totalP++; else if (j.wl === 'N') totalN++;
+  }));
+  const totalOps = totalP + totalN;
+
+  document.getElementById('etapaAtualNum').textContent     = '#' + (STATE.historico.length + 1);
+  document.getElementById('etapaCapitalAtual').textContent = fmt(saldo);
+  document.getElementById('etapaKpis').innerHTML = `
+    <div style="background:rgba(255,255,255,0.15);border-radius:8px;padding:10px;text-align:center">
+      <div style="font-size:10px;color:rgba(255,255,255,0.7);margin-bottom:4px">Capital Inicial</div>
+      <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#fff">${fmt(cfg.capital)}</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.15);border-radius:8px;padding:10px;text-align:center">
+      <div style="font-size:10px;color:rgba(255,255,255,0.7);margin-bottom:4px">Rendimento</div>
+      <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:${lucro>=0?'#7dffc0':'#ffb3b3'}">${lucro>=0?'+':''}${fmt(lucro)}</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.15);border-radius:8px;padding:10px;text-align:center">
+      <div style="font-size:10px;color:rgba(255,255,255,0.7);margin-bottom:4px">% Etapa</div>
+      <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:${pct>=0?'#7dffc0':'#ffb3b3'}">${pct>=0?'+':''}${pct.toFixed(2)}%</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.15);border-radius:8px;padding:10px;text-align:center">
+      <div style="font-size:10px;color:rgba(255,255,255,0.7);margin-bottom:4px">P / N</div>
+      <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#fff">${totalOps} <span style="font-size:11px">(${totalP}/${totalN})</span></div>
+    </div>`;
+
+  const tbody = document.getElementById('histBody');
+  const tfoot = document.getElementById('histFoot');
+  tbody.innerHTML = '';
+
+  if (!STATE.historico.length) {
+    tbody.innerHTML = `<tr><td colspan="11" style="color:var(--muted);padding:32px;text-align:center">
+      Nenhuma etapa concluída ainda.<br>
+      <span style="font-size:12px">Clique em "✅ Fechar Etapa & Iniciar Nova" quando atingir seu objetivo.</span>
+    </td></tr>`;
+    tfoot.innerHTML = ''; return;
+  }
+
+  let totalRend = 0, totalP2 = 0, totalN2 = 0, totalOps2 = 0;
+  const capInicial = STATE.historico[0].capital_ini;
+
+  STATE.historico.forEach((e, i) => {
+    const rend = e.capital_fim - e.capital_ini;
+    const p    = (rend / e.capital_ini * 100);
+    const taxa = e.ops ? (e.positivos / e.ops * 100).toFixed(0) + '%' : '—';
+    totalRend += rend; totalP2 += e.positivos; totalN2 += e.negativos; totalOps2 += e.ops;
+
+    let duracao = '—';
+    if (e.inicio && e.fim) {
+      const mins = Math.round((new Date(e.fim) - new Date(e.inicio)) / 60000);
+      duracao = mins < 60 ? `${mins}min` : `${Math.floor(mins/60)}h${mins%60>0?String(mins%60)+'m':''}`;
+    }
+
+    const tr = document.createElement('tr');
+    tr.className = rend >= 0 ? 'row-pos' : 'row-neg';
+    tr.innerHTML = `
+      <td class="mono" style="font-weight:700;color:var(--accent)">Etapa #${e.num}</td>
+      <td class="mono">${fmt(e.capital_ini)}</td>
+      <td class="mono" style="font-weight:700">${fmt(e.capital_fim)}</td>
+      <td class="mono" style="color:${rend>=0?'#27ae60':'var(--red)'};font-weight:700">${rend>=0?'+':''}${fmt(rend)}</td>
+      <td class="mono" style="color:${p>=0?'#27ae60':'var(--red)'}">${p>=0?'+':''}${p.toFixed(2)}%</td>
+      <td class="mono">${e.ops}</td>
+      <td class="mono" style="color:#27ae60">${e.positivos}</td>
+      <td class="mono" style="color:var(--red)">${e.negativos}</td>
+      <td class="mono">${taxa}</td>
+      <td class="mono" style="color:var(--muted)">${duracao}</td>
+      <td><button onclick="delEtapa(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px">✕</button></td>`;
+    tbody.appendChild(tr);
+  });
+
+  const capFinal = STATE.historico[STATE.historico.length-1].capital_fim;
+  const crescTotal = (capFinal - capInicial) / capInicial * 100;
+  tfoot.innerHTML = `
+    <tr style="background:var(--surface2)">
+      <td class="mono" style="font-weight:700;color:var(--muted)">${STATE.historico.length} etapas</td>
+      <td class="mono text-muted">${fmt(capInicial)}</td>
+      <td class="mono text-gold" style="font-weight:700">${fmt(capFinal)}</td>
+      <td class="mono" style="color:${totalRend>=0?'#27ae60':'var(--red)'};font-weight:700">${totalRend>=0?'+':''}${fmt(totalRend)}</td>
+      <td class="mono" style="color:${crescTotal>=0?'#27ae60':'var(--red)'};font-weight:700">${crescTotal>=0?'+':''}${crescTotal.toFixed(2)}%</td>
+      <td class="mono">${totalOps2}</td>
+      <td class="mono" style="color:#27ae60">${totalP2}</td>
+      <td class="mono" style="color:var(--red)">${totalN2}</td>
+      <td class="mono">${totalOps2?(totalP2/totalOps2*100).toFixed(0)+'%':'—'}</td>
+      <td colspan="2"></td>
+    </tr>`;
+}
+
+function delEtapa(i) {
+  if (!confirm('Remover esta etapa?')) return;
+  STATE.historico.splice(i, 1);
+  STATE.historico.forEach((e, idx) => e.num = idx + 1);
+  saveState(); renderHistorico();
+}
+
+
+
+
+// ════════════════════════════════════════════
+// RENDER CONFIG
+// ════════════════════════════════════════════
+function atualizarCapitalTotal() {
+  const banco      = +document.getElementById('cfg_banco').value || 0;
+  const plataforma = +document.getElementById('cfg_plataforma').value || 0;
+  const metaPct    = +(document.getElementById('cfg_meta_pct') ? document.getElementById('cfg_meta_pct').value : STATE.cfg.meta_pct) || 3;
+  const total      = banco + plataforma;
+  const comMeta    = total * (1 + metaPct / 100);
+  const elT = document.getElementById('capitalTotalDisplay');
+  const elM = document.getElementById('capitalMetaDisplay');
+  if (elT) elT.textContent = fmt(total);
+  if (elM) elM.textContent = fmt(comMeta);
+}
+
+function renderConfig() {
+  const c = STATE.cfg;
+  document.getElementById('cfg_banco').value      = c.banco      || 0;
+  document.getElementById('cfg_plataforma').value = c.plataforma || c.capital || 1000;
+  document.getElementById('cfg_base_pct').value   = c.base_pct;
+  document.getElementById('cfg_odd').value        = c.odd;
+  document.getElementById('cfg_meta_pct').value   = c.meta_pct;
+  document.getElementById('cfg_limite').value     = c.limite;
+  document.getElementById('cfg_incr').value         = c.incr;
+  document.getElementById('cfg_incr_ganho').value   = c.incr_ganho || 10;
+  document.getElementById('cfg_gatilho').value    = c.gatilho;
+  document.getElementById('cfg_stop_loss').value   = c.stop_loss  || 10;
+  document.getElementById('cfg_teto_aposta').value = c.teto_aposta !== undefined ? c.teto_aposta : 5;
+  document.getElementById('cfg_lote_qtd').value   = c.lote_qtd   || 10;
+  document.getElementById('cfg_letras_qtd').value = c.letras_qtd || 2;
+  document.getElementById('cfg_mercado').value    = c.ativo    || 'Ambos Marcam';
+  document.getElementById('cfg_opcao_a').value    = c.opcao_a  || 'Ambos NÃO';
+  document.getElementById('cfg_opcao_b').value    = c.opcao_b  || 'Ambos SIM';
+  atualizarCapitalTotal();
+}
+
+function saveConfig() {
+  const opcA       = document.getElementById('cfg_opcao_a').value.trim() || 'Opção A';
+  const opcB       = document.getElementById('cfg_opcao_b').value.trim() || 'Opção B';
+  const banco      = +document.getElementById('cfg_banco').value      || 0;
+  const plataforma = +document.getElementById('cfg_plataforma').value || 1000;
+  const capital    = banco + plataforma;
+  if (opcA === opcB) { showToast('⚠️ As duas opções não podem ser iguais!'); return; }
+
+  // M1 fix: validação de inputs
+  const odd = +document.getElementById('cfg_odd').value;
+  const base_pct = +document.getElementById('cfg_base_pct').value;
+  const incr = +document.getElementById('cfg_incr').value;
+  if (odd < 1.01) { showToast('⚠️ Odd deve ser maior que 1.01!'); return; }
+  if (base_pct <= 0) { showToast('⚠️ Operação base deve ser maior que 0%!'); return; }
+  if (incr < 0) { showToast('⚠️ Incremento não pode ser negativo!'); return; }
+  if (capital <= 0) { showToast('⚠️ Capital total deve ser maior que zero!'); return; }
+
+  STATE.cfg = {
+    capital, banco, plataforma,
+    base_pct,
+    odd,
+    meta_pct: +document.getElementById('cfg_meta_pct').value || 3,
+    limite:   +document.getElementById('cfg_limite').value   || 50,
+    incr,
+    incr_ganho: +document.getElementById('cfg_incr_ganho').value || 10,
+    gatilho:  +document.getElementById('cfg_gatilho').value  || 3,
+    retorno:  +document.getElementById('cfg_retorno').value  || 50,
+    stop_loss: Math.max(1, +document.getElementById('cfg_stop_loss').value || 10),
+    teto_aposta: Math.max(0, +document.getElementById('cfg_teto_aposta').value || 0),
+    lote_qtd:   Math.min(20, Math.max(1, +document.getElementById('cfg_lote_qtd').value   || 10)),
+    letras_qtd: Math.min(5,  Math.max(2, +document.getElementById('cfg_letras_qtd').value || 2)),
+    ativo:   document.getElementById('cfg_mercado').value.trim() || 'Ativo',
+    opcao_a: opcA, opcao_b: opcB,
+  };
+  saveState(); ensureSeqs(); initLote(); renderPainel();
+  document.title = '🎯 ' + STATE.cfg.ativo + ' — Método Marantan';
+  showToast('✅ Salvo! Capital total: ' + fmt(capital) + ' (Banco: ' + fmt(banco) + ' + Plataforma: ' + fmt(plataforma) + ')');
+}
+function savePwd() {
+  const np = document.getElementById('newPwd').value;
+  const cp = document.getElementById('confirmPwd').value;
+  if (np.length < 3) { showToast('⚠️ Senha deve ter pelo menos 3 caracteres!'); return; }
+  if (np !== cp)     { showToast('⚠️ Senhas não coincidem!'); return; }
+  STATE.pwd = np;
+  document.getElementById('newPwd').value = '';
+  document.getElementById('confirmPwd').value = '';
+  showToast('🔐 Senha alterada com sucesso!');
+}
+
+// ════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════
+function fmt(v) {
+  return 'R$ ' + Math.abs(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+// ════════════════════════════════════════════
+// REALINHAMENTO DE APOSTAS
+// ════════════════════════════════════════════
+function realinharApostas() {
+  const cfg = STATE.cfg;
+
+  // Só considera sequências com aposta pendente (sem resultado ainda neste lote)
+  const seqsAtivas = LOTE_PENDENTE.filter(item => !item.wl || item.wl === '');
+
+  if (seqsAtivas.length === 0) {
+    showToast('⚠️ Nenhuma aposta pendente para realinhar.'); return;
+  }
+  if (seqsAtivas.length === 1) {
+    showToast('⚠️ Só há 1 sequência ativa — realinhamento não é necessário.'); return;
+  }
+
+  // Total atual das apostas pendentes
+  const totalAtual = seqsAtivas.reduce((s, item) => s + item.operação, 0);
+
+  // Valor nivelado = total / número de seqs ativas, arredondado
+  const valorNivelado = arred50(totalAtual / seqsAtivas.length);
+
+  // Mostra modal de confirmação com preview
+  const maiorAposta = Math.max(...seqsAtivas.map(i => i.operação));
+  const menorAposta = Math.min(...seqsAtivas.map(i => i.operação));
+
+  // Monta preview das seqs que vão mudar
+  const mudancas = seqsAtivas
+    .filter(item => Math.abs(item.operação - valorNivelado) > 0.01)
+    .map(item => {
+      const diff = valorNivelado - item.operação;
+      const sinal = diff > 0 ? '▲' : '▼';
+      const cor   = diff > 0 ? '#c42b1c' : '#27ae60';
+      return `Seq ${item.seqIdx + 1}: ${fmt(item.operação)} → <strong style="color:${cor}">${fmt(valorNivelado)} ${sinal} ${fmt(Math.abs(diff))}</strong>`;
+    });
+
+  const msgHtml = `
+    <div style="margin-bottom:16px;font-size:13px;color:var(--muted)">
+      <strong>${seqsAtivas.length}</strong> sequências ativas &nbsp;|&nbsp;
+      Total: <strong>${fmt(totalAtual)}</strong> &nbsp;|&nbsp;
+      Nivelado: <strong style="color:var(--accent)">${fmt(valorNivelado)} cada</strong>
+    </div>
+    <div style="font-size:13px;line-height:2;max-height:200px;overflow-y:auto">
+      ${mudancas.length > 0 ? mudancas.join('<br>') : '<span style="color:#27ae60">Todas já estão niveladas!</span>'}
+    </div>`;
+
+  document.getElementById('modalRealinharBody').innerHTML = msgHtml;
+  document.getElementById('modalRealinharValor').textContent = fmt(valorNivelado);
+  document.getElementById('modalRealinharTotal').textContent = fmt(totalAtual);
+  // Salva o valor calculado para confirmar
+  document.getElementById('modalRealinharBtn').onclick = function() {
+    confirmarRealinhamento(valorNivelado);
+  };
+  abrirModal('modalRealinhar');
+}
+
+function confirmarRealinhamento(valorNivelado) {
+  // Aplica o valor nivelado apenas nas seqs pendentes
+  LOTE_PENDENTE.forEach(item => {
+    if (!item.wl || item.wl === '') {
+      item.operação = valorNivelado;
+      // Registra que foi realinhado para o histórico
+      item.realinhado = true;
+    }
+  });
+  fecharModal('modalRealinhar');
+  renderLote();
+  showToast('⚖️ Apostas realinhadas em ' + fmt(valorNivelado) + ' cada!');
+}
+// ════════════════════════════════════════════
+function panico() {
+  document.getElementById('app').style.display = 'none';
+  document.body.innerHTML = '<div style="font-family:Arial,sans-serif;padding:60px;color:#333"><h2>Google</h2><p>Redirecionando...</p></div>';
+  setTimeout(() => { window.location.href = 'https://www.google.com'; }, 300);
+}
+
+// Atalho: ESC pressionado 2x em menos de 1 segundo
+let _escCount = 0, _escTimer = null;
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    _escCount++;
+    if (_escCount === 1) {
+      _escTimer = setTimeout(() => { _escCount = 0; }, 1000);
+    }
+    if (_escCount >= 2) {
+      clearTimeout(_escTimer);
+      _escCount = 0;
+      panico();
+    }
+  }
+});
+function toggleDark() {
+  const isDark = document.body.classList.toggle('dark-mode');
+  localStorage.setItem('esm_dark', isDark ? '1' : '0');
+  document.getElementById('darkBtn').textContent = isDark ? '☀️ Claro' : '🌙 Escuro';
+  // M3 fix: re-renderizar gráfico para aplicar cores corretas
+  const grafTab = document.getElementById('tab-grafico');
+  if (grafTab && grafTab.classList.contains('active')) renderGrafico();
+}
+function initDarkMode() {
+  if (localStorage.getItem('esm_dark') === '1') {
+    document.body.classList.add('dark-mode');
+    const btn = document.getElementById('darkBtn');
+    if (btn) btn.textContent = '☀️ Claro';
+  }
+}
+
+// ════════════════════════════════════════════
+// ALERTAS BLOQUEANTES
+// ════════════════════════════════════════════
+const ALERTAS = {
+  objetivo: {
+    icone: '🏆',
+    titulo: 'OBJETIVO ATINGIDO!',
+    btnPrincipal: '✅ Encerrar o dia agora',
+    sub: 'Você chegou onde queria. Sair agora é a decisão certa.',
+  },
+  stop: {
+    icone: '🛑',
+    titulo: 'PARE AGORA.',
+    btnPrincipal: '🛑 Vou parar agora',
+    sub: 'Continuar operando no prejuízo é a causa número 1 de perda de banca. O mercado não vai embora. Amanhã é outro dia.',
+  },
+  inv: {
+    icone: '🔄',
+    titulo: 'TROCAR O LADO',
+    btnPrincipal: '✅ Entendido — vou trocar',
+    sub: 'O gatilho de inversão existe exatamente para esse momento. Respeite-o.',
+  },
+  teto: {
+    icone: '🔒',
+    titulo: 'TETO DE APOSTA ATINGIDO',
+    btnPrincipal: '✅ Entendido',
+    sub: 'O teto existe para proteger sua banca. A aposta está limitada — não force mais do que isso.',
+  },
+  seq_longa: {
+    icone: '⛔',
+    titulo: 'SEQUÊNCIA CRÍTICA',
+    btnPrincipal: '🛑 Vou pausar essa sequência',
+    sub: 'Sequências longas não melhoram apostando mais. Pause, respire, avalie. A disciplina vale mais que qualquer recuperação.',
+  },
+};
+
+function dispararAlerta(tipo, msg) {
+  const cfg = ALERTAS[tipo] || ALERTAS.stop;
+  const overlay = document.getElementById('alertaOverlay');
+  overlay.className = 'alerta-overlay open tipo-' + (tipo === 'teto' || tipo === 'seq_longa' ? 'stop' : tipo === 'inv' ? 'inv' : tipo);
+
+  document.getElementById('alertaIcone').textContent   = cfg.icone;
+  document.getElementById('alertaTitulo').textContent  = cfg.titulo;
+  document.getElementById('alertaTitulo').className    = 'alerta-titulo ' + (tipo === 'objetivo' ? 'objetivo' : tipo === 'inv' ? 'inv' : 'stop');
+  document.getElementById('alertaMsg').textContent     = msg;
+  document.getElementById('alertaSub').textContent     = cfg.sub;
+  document.getElementById('alertaBtnPrincipal').textContent  = cfg.btnPrincipal;
+  document.getElementById('alertaBtnPrincipal').className    = 'alerta-btn principal ' + (tipo === 'objetivo' ? 'objetivo' : tipo === 'inv' ? 'inv' : 'stop');
+
+  // Botão secundário: só aparece nos alertas de parada, não no objetivo
+  const btnSec = document.getElementById('alertaBtnSecundario');
+  btnSec.style.display = tipo === 'objetivo' ? 'none' : 'block';
+
+  tocarSomAlerta(tipo);
+}
+
+function fecharAlerta() {
+  document.getElementById('alertaOverlay').classList.remove('open');
+}
+
+function tocarSomAlerta(tipo) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (tipo === 'objetivo') {
+      // Fanfarra de vitória
+      [523, 659, 784, 1047].forEach((freq, i) => {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = freq; osc.type = 'sine';
+        gain.gain.setValueAtTime(0.22, ctx.currentTime + i * 0.16);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.16 + 0.35);
+        osc.start(ctx.currentTime + i * 0.16);
+        osc.stop(ctx.currentTime + i * 0.16 + 0.4);
+      });
+    } else if (tipo === 'stop' || tipo === 'seq_longa') {
+      // Buzzer grave urgente — 3 pulsos
+      [180, 160, 140].forEach((freq, i) => {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = freq; osc.type = 'sawtooth';
+        gain.gain.setValueAtTime(0.30, ctx.currentTime + i * 0.22);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.22 + 0.18);
+        osc.start(ctx.currentTime + i * 0.22);
+        osc.stop(ctx.currentTime + i * 0.22 + 0.22);
+      });
+    } else {
+      // Duplo bip de aviso
+      [440, 440].forEach((freq, i) => {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = freq; osc.type = 'square';
+        gain.gain.setValueAtTime(0.20, ctx.currentTime + i * 0.18);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.18 + 0.14);
+        osc.start(ctx.currentTime + i * 0.18);
+        osc.stop(ctx.currentTime + i * 0.18 + 0.18);
+      });
+    }
+  } catch(e) {}
+}
+
+// Verifica alertas após cada confirmação
+function verificarAlertas() {
+  const cfg     = STATE.cfg;
+  const saldo   = calcSaldoGlobal();
+  const rendimento = saldo - cfg.capital;
+  const pctDia  = rendimento / cfg.capital * 100;
+
+  // 1. Objetivo atingido
+  if (pctDia >= cfg.meta_pct) {
+    dispararAlerta('objetivo',
+      'Você lucrou ' + (pctDia >= 0 ? '+' : '') + pctDia.toFixed(1) + '% hoje — ' + fmt(rendimento) + ' de rendimento. ' +
+      'Encerre o dia e proteja esse resultado.');
+    return;
+  }
+
+  // 2. Stop loss global
+  const stopLoss = cfg.stop_loss || 10;
+  if (pctDia <= -stopLoss) {
+    dispararAlerta('stop',
+      'Você perdeu ' + Math.abs(pctDia).toFixed(1) + '% do capital hoje (' + fmt(Math.abs(rendimento)) + '). ' +
+      'Continuar agora vai piorar. O stop loss de ' + stopLoss + '% existe por uma razão.');
+    return;
+  }
+
+  const tetoVal = cfg.teto_aposta > 0 ? arred50(cfg.capital * (cfg.teto_aposta / 100)) : Infinity;
+
+  STATE.seqs.forEach((seq, i) => {
+    const streak = getStreak(seq);
+
+    // 3. Sequência crítica — 5+ negativos seguidos
+    if (streak >= 5) {
+      dispararAlerta('seq_longa',
+        'A Sequência ' + (i+1) + ' acumula ' + streak + ' negativos seguidos. ' +
+        'Você já perdeu o suficiente nessa sequência. ' +
+        'Pause, redefina para a base e não force a recuperação.');
+      return;
+    }
+
+    // 4. Gatilho de inversão de lado
+    if (streak === cfg.gatilho) {
+      dispararAlerta('inv',
+        'Sequência ' + (i+1) + ' atingiu ' + streak + ' negativos consecutivos. ' +
+        'Troque o lado agora — não aposte mais no mesmo resultado.');
+    }
+
+    // 5. Teto atingido
+    if (tetoVal !== Infinity && seq.length > 0) {
+      const proxima = computeProxApostaSeq(seq, cfg);
+      if (proxima >= tetoVal - 0.01 && streak >= 3) {
+        dispararAlerta('teto',
+          'A Sequência ' + (i+1) + ' está no teto de ' + fmt(tetoVal) + ' por operação. ' +
+          'O incremento parou de crescer. Não aumente o teto manualmente para "recuperar mais rápido".');
+      }
+    }
+  });
+}
+
+// ════════════════════════════════════════════
+// MODAL HELPERS
+// ════════════════════════════════════════════
+function abrirModal(id)  { document.getElementById(id).classList.add('open'); }
+function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// Fecha modal ao clicar fora
+
+// ════════════════════════════════════════════
+// RESUMO DO DIA
+// ════════════════════════════════════════════
+function abrirResumo() {
+  const cfg    = STATE.cfg;
+  const saldo  = calcSaldoGlobal();
+  const rendimento  = saldo - cfg.capital;
+  const pctDia = rendimento / cfg.capital * 100;
+  let totalW = 0, totalL = 0, totalJogos = 0;
+  STATE.seqs.forEach(seq => {
+    seq.forEach(j => {
+      if (j.wl === 'P') totalW++;
+      else if (j.wl === 'N') totalL++;
+    });
+  });
+  totalJogos = totalW + totalL;
+  const taxa = totalJogos ? (totalW / totalJogos * 100).toFixed(0) : 0;
+  const maxLotes = STATE.seqs.reduce((acc, s) => Math.max(acc, s.length), 0);
+
+  document.getElementById('resumoData').textContent =
+    new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
+
+  document.getElementById('resumoKpis').innerHTML = `
+    <div class="resumo-kpi"><div class="resumo-kpi-label">Capital Inicial</div><div class="resumo-kpi-val">${fmt(cfg.capital)}</div></div>
+    <div class="resumo-kpi"><div class="resumo-kpi-label">Capital Final</div><div class="resumo-kpi-val" style="color:${rendimento>=0?'#27ae60':'var(--red)'}">${fmt(saldo)}</div></div>
+    <div class="resumo-kpi"><div class="resumo-kpi-label">Rendimento / Perda</div><div class="resumo-kpi-val" style="color:${rendimento>=0?'#27ae60':'var(--red)'}">${rendimento>=0?'+':''}${fmt(rendimento)}</div></div>
+    <div class="resumo-kpi"><div class="resumo-kpi-label">% do Dia</div><div class="resumo-kpi-val" style="color:${pctDia>=0?'#27ae60':'var(--red)'}">${pctDia>=0?'+':''}${pctDia.toFixed(2)}%</div></div>
+    <div class="resumo-kpi"><div class="resumo-kpi-label">Positivos</div><div class="resumo-kpi-val" style="color:#27ae60">${totalW}</div></div>
+    <div class="resumo-kpi"><div class="resumo-kpi-label">Negativos</div><div class="resumo-kpi-val" style="color:var(--red)">${totalL}</div></div>
+    <div class="resumo-kpi"><div class="resumo-kpi-label">Total Jogos</div><div class="resumo-kpi-val">${totalJogos}</div></div>
+    <div class="resumo-kpi"><div class="resumo-kpi-label">Taxa de Sucesso</div><div class="resumo-kpi-val">${taxa}%</div></div>`;
+
+  // Rodadas
+  let lotesHtml = '', saldoAcum = cfg.capital;
+  for (let l = 0; l < maxLotes; l++) {
+    let lw = 0, ll = 0, lucL = 0;
+    STATE.seqs.forEach(seq => {
+      const j = seq[l];
+      if (!j) return;
+      if (j.wl === 'P') { lw++; lucL += j.operação * (cfg.odd - 1); }
+      else if (j.wl === 'N') { ll++; lucL -= j.operação; }
+    });
+    saldoAcum += lucL;
+    lotesHtml += `<div class="modal-row">
+      <span>Rodada #${l+1}</span>
+      <span>✅${lw} ❌${ll}</span>
+      <strong style="color:${lucL>=0?'#27ae60':'var(--red)'}">${lucL>=0?'+':''}${fmt(lucL)}</strong>
+      <span style="font-size:11px;color:var(--muted)">${fmt(saldoAcum)}</span>
+    </div>`;
+  }
+  document.getElementById('resumoLotes').innerHTML = lotesHtml || '<div style="color:var(--muted);font-size:13px;padding:10px">Nenhum rodada registrado hoje.</div>';
+  abrirModal('modalResumo');
+}
+
+function registrarDiaDoResumo() {
+  const cfg   = STATE.cfg;
+  const saldo = calcSaldoGlobal();
+  let totalW = 0, totalL = 0;
+  STATE.seqs.forEach(seq => seq.forEach(j => {
+    if (j.wl === 'P') totalW++; else if (j.wl === 'N') totalL++;
+  }));
+  const totalJogos = totalW + totalL;
+  if (totalJogos === 0) { showToast('⚠️ Nenhuma operação para registrar!'); return; }
+
+  // BUG 4 fix: usar mesma estrutura de fecharEtapa para compatibilidade com renderHistorico
+  if (!confirm(`Registrar Etapa #${STATE.historico.length + 1}?\n\nCapital: ${fmt(cfg.capital)} → ${fmt(saldo)}\nOperações: ${totalJogos} (${totalW}P / ${totalL}N)`)) return;
+
+  STATE.historico.push({
+    num:         STATE.historico.length + 1,
+    capital_ini: cfg.capital,
+    capital_fim: +saldo.toFixed(2),
+    ops:         totalJogos,
+    positivos:   totalW,
+    negativos:   totalL,
+    inicio:      STATE.etapa_inicio || new Date().toISOString(),
+    fim:         new Date().toISOString(),
+  });
+
+  STATE.cfg.capital  = +saldo.toFixed(2);
+  STATE.seqs         = [];
+  STATE.lote_num     = 1;
+  STATE.etapa_inicio = new Date().toISOString();
+
+  saveState();
+  fecharModal('modalResumo');
+  ensureSeqs(); initLote(); renderHistorico(); renderPainel();
+  showToast('✅ Etapa #' + STATE.historico.length + ' registrada no Histórico!');
+}
+
+// ════════════════════════════════════════════
+// EXPORTAR CSV
+// ════════════════════════════════════════════
+function exportarCSV() {
+  const cfg = STATE.cfg;
+  const maxLotes = STATE.seqs.reduce((acc, s) => Math.max(acc, s.length), 0);
+  let csv = 'Rodada,Ciclo,Lado,Retorno,P/N,Operação (R$),Rendimento (R$)\n';
+  for (let l = 0; l < maxLotes; l++) {
+    STATE.seqs.forEach((seq, s) => {
+      const j = seq[l];
+      if (!j) return;
+      const rendimento = j.wl === 'P' ? j.operação * (cfg.odd - 1) : j.wl === 'N' ? -j.operação : 0;
+      csv += `${l+1},${s+1},"${j.lado}","${j.retorno}",${j.wl},${j.operação.toFixed(2)},${rendimento.toFixed(2)}\n`;
+    });
+  }
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'esports_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('📄 CSV exportado!');
+}
+
+// ════════════════════════════════════════════
+// EXPORTAR PDF (via impressão)
+// ════════════════════════════════════════════
+function exportarPDF() {
+  const cfg    = STATE.cfg;
+  const saldo  = calcSaldoGlobal();
+  const rendimento  = saldo - cfg.capital;
+  const pctDia = (rendimento / cfg.capital * 100).toFixed(2);
+  const hoje   = new Date().toLocaleDateString('pt-BR');
+  const maxLotes = STATE.seqs.reduce((acc, s) => Math.max(acc, s.length), 0);
+  let tabelaHTML = '';
+  let saldoAcum = cfg.capital;
+  for (let l = 0; l < maxLotes; l++) {
+    let lw = 0, ll = 0, lucL = 0;
+    STATE.seqs.forEach(seq => {
+      const j = seq[l];
+      if (!j) return;
+      if (j.wl === 'P') { lw++; lucL += j.operação*(cfg.odd-1); }
+      else if (j.wl === 'N') { ll++; lucL -= j.operação; }
+    });
+    saldoAcum += lucL;
+    tabelaHTML += `<tr style="background:${lucL>=0?'#e8f8f0':'#fdf0ef'}">
+      <td style="padding:6px 10px;border:1px solid #ddd;font-weight:700">#${l+1}</td>
+      <td style="padding:6px 10px;border:1px solid #ddd;color:#27ae60">✅ ${lw}W</td>
+      <td style="padding:6px 10px;border:1px solid #ddd;color:#c42b1c">❌ ${ll}L</td>
+      <td style="padding:6px 10px;border:1px solid #ddd;font-weight:700;color:${lucL>=0?'#27ae60':'#c42b1c'}">${lucL>=0?'+':''}R$ ${Math.abs(lucL).toFixed(2)}</td>
+      <td style="padding:6px 10px;border:1px solid #ddd">R$ ${saldoAcum.toFixed(2)}</td>
+    </tr>`;
+  }
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>Resumo ${hoje}</title>
+    <style>body{font-family:Arial,sans-serif;padding:32px;color:#1a1a1a}
+    h1{color:#0078d4;margin-bottom:4px}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}
+    .kpi{background:#f0f7ff;border-radius:8px;padding:12px;text-align:center}
+    .kpi-label{font-size:11px;color:#666;margin-bottom:4px}
+    .kpi-val{font-size:18px;font-weight:700;color:#0078d4}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th{background:#0078d4;color:#fff;padding:8px 10px;text-align:left;font-size:13px}
+    @media print{body{padding:16px}}</style></head><body>
+    <h1>🎯 Método Marantan — Resumo do Dia</h1>
+    <p style="color:#666">${hoje} · Ativo: ${cfg.ativo || 'Ambos Marcam'}</p>
+    <div class="grid">
+      <div class="kpi"><div class="kpi-label">Capital Inicial</div><div class="kpi-val">R$ ${cfg.capital.toFixed(2)}</div></div>
+      <div class="kpi"><div class="kpi-label">Capital Final</div><div class="kpi-val" style="color:${rendimento>=0?'#27ae60':'#c42b1c'}">R$ ${saldo.toFixed(2)}</div></div>
+      <div class="kpi"><div class="kpi-label">Rendimento/Perda</div><div class="kpi-val" style="color:${rendimento>=0?'#27ae60':'#c42b1c'}">${rendimento>=0?'+':''}R$ ${Math.abs(rendimento).toFixed(2)}</div></div>
+      <div class="kpi"><div class="kpi-label">% do Dia</div><div class="kpi-val" style="color:${rendimento>=0?'#27ae60':'#c42b1c'}">${rendimento>=0?'+':''}${pctDia}%</div></div>
+    </div>
+    <table><thead><tr><th>Rodada</th><th>Positivos</th><th>Negativos</th><th>Rendimento/Prej.</th><th>Saldo Acum.</th></tr></thead>
+    <tbody>${tabelaHTML}</tbody></table>
+    <p style="margin-top:24px;font-size:11px;color:#aaa">Gerado em ${new Date().toLocaleString('pt-BR')}</p>
+    <script>window.onload=()=>window.print()<\/script></body></html>`);
+  win.document.close();
+  showToast('🖨️ PDF pronto para impressão!');
+}
+
+// ════════════════════════════════════════════
+// BACKUP & RESTAURAR
+// ════════════════════════════════════════════
+function abrirBackup() {
+  document.getElementById('backupFileNome').textContent = '';
+  document.getElementById('backupFileInput').value = '';
+  abrirModal('modalBackup');
+}
+
+function baixarBackup() {
+  const dados = {
+    versao: '2.1',
+    data: new Date().toISOString(),
+    cfg: STATE.cfg,
+    seqs: STATE.seqs,
+    historico: STATE.historico,
+    lote_num: STATE.lote_num,
+    etapa_inicio: STATE.etapa_inicio,
+  };
+  const blob = new Blob([JSON.stringify(dados, null, 2)], {type: 'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const data = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = 'marantan_backup_' + data + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ Backup salvo!');
+}
+
+function lerArquivoBackup(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('backupFileNome').textContent = '📄 ' + file.name;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const dados = JSON.parse(e.target.result);
+      if (!dados.cfg || !dados.seqs) throw new Error('Formato inválido');
+      // Mostra preview antes de confirmar
+      const dataBackup = dados.data ? new Date(dados.data).toLocaleString('pt-BR') : 'data desconhecida';
+      const etapas = (dados.historico || []).length;
+      const capital = dados.cfg.capital ? 'R$ ' + dados.cfg.capital.toLocaleString('pt-BR', {minimumFractionDigits:2}) : '—';
+      if (!confirm(
+        'Restaurar este backup?\n\n' +
+        '📅 Data: ' + dataBackup + '\n' +
+        '💰 Capital: ' + capital + '\n' +
+        '📊 Etapas no histórico: ' + etapas + '\n\n' +
+        '⚠️ Isso vai SOBRESCREVER todos os dados atuais.'
+      )) {
+        document.getElementById('backupFileNome').textContent = 'Cancelado.';
+        return;
+      }
+      STATE.cfg          = dados.cfg;
+      STATE.seqs         = dados.seqs;
+      STATE.historico    = dados.historico || [];
+      STATE.lote_num     = dados.lote_num  || 1;
+      STATE.etapa_inicio = dados.etapa_inicio || new Date().toISOString();
+      saveState();
+      fecharModal('modalBackup');
+      renderAll();
+      showToast('✅ Dados restaurados com sucesso!');
+    } catch(e) {
+      document.getElementById('backupFileNome').textContent = '❌ Arquivo inválido.';
+      showToast('❌ Arquivo inválido. Escolha um backup correto.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ════════════════════════════════════════════
+// RENDER ALL — atualizado
+// ════════════════════════════════════════════
+function toggleProgresso() {
+  const content = document.getElementById('progressoContent');
+  const btn     = document.getElementById('progressoToggleBtn');
+  const isOpen  = content.style.display !== 'none';
+  content.style.display = isOpen ? 'none' : 'block';
+  btn.textContent = isOpen ? '▼' : '▲';
+}
+
+function toggleStatBox() {
+  const content = document.getElementById('statBoxContent');
+  const btn     = document.getElementById('statBoxToggleBtn');
+  const isOpen  = content.style.display !== 'none';
+  content.style.display = isOpen ? 'none' : 'block';
+  btn.textContent = isOpen ? '▼ Expandir' : '▲ Recolher';
+}
+
+function toggleCfg(id) {
+  const content = document.getElementById(id);
+  const btn     = document.getElementById(id + 'Btn');
+  if (!content) return;
+  const isOpen = content.style.display !== 'none';
+  content.style.display = isOpen ? 'none' : 'block';
+  if (btn) btn.textContent = isOpen ? '▼' : '▲';
+}
+
+function renderAll() {
+  ensureSeqs(); renderPainel(); renderConfig(); initLote(); initDarkMode();
+}
+// histData field removed - etapas system
+
+// ════════════════════════════════════════════
+// GRÁFICO — CRESCIMENTO REAL vs PROJEÇÃO
+// ════════════════════════════════════════════
+// GRÁFICO — Chart.js
+// ════════════════════════════════════════════
+let _chartInstance = null;
+function renderGrafico() {
+  // Verifica se Chart.js carregou (requer internet)
+  if (typeof Chart === 'undefined') {
+    const canvas = document.getElementById('graficoCanvas');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'var(--muted, #999)';
+      ctx.font = '14px DM Sans, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('📶 Gráfico requer conexão com internet.', canvas.width/2, canvas.height/2 - 10);
+      ctx.fillText('Conecte-se para visualizar o gráfico.', canvas.width/2, canvas.height/2 + 14);
+    }
+    return;
+  }
+  const cfg     = STATE.cfg;
+  const hist    = STATE.historico;
+  const metaPct = cfg.meta_pct / 100;
+  const ETAPAS  = Math.min(500, Math.max(10, parseInt(document.getElementById('grafEtapas').value) || 100));
+
+  const capitalInicial = hist.length > 0 ? hist[0].capital_ini : cfg.capital;
+  const pontosReais    = [capitalInicial];
+  hist.forEach(e => pontosReais.push(e.capital_fim));
+  const etapasReais = hist.length;
+
+  const labelsX = [], pMeta = [], pOtim = [], pCons = [];
+  for (let d = 0; d <= ETAPAS; d++) {
+    labelsX.push('Etapa ' + d);
+    pMeta.push(+(capitalInicial * Math.pow(1 + metaPct,       d)).toFixed(2));
+    pOtim.push(+(capitalInicial * Math.pow(1 + metaPct * 1.5, d)).toFixed(2));
+    pCons.push(+(capitalInicial * Math.pow(1 + metaPct * 0.5, d)).toFixed(2));
+  }
+
+  const capitalAtual = pontosReais[pontosReais.length - 1];
+  const projEtapa    = pMeta[Math.min(etapasReais, ETAPAS)] || capitalInicial;
+  const dif          = capitalAtual - projEtapa;
+  const difP         = projEtapa ? (dif / projEtapa * 100) : 0;
+
+  document.getElementById('gBancaInicial').textContent  = fmt(capitalInicial);
+  document.getElementById('gDataInicio').textContent    = 'Etapa #1';
+  document.getElementById('gDiasReais').textContent     = etapasReais;
+  document.getElementById('gDiasReaisSub').textContent  = 'de ' + ETAPAS + ' projetadas';
+  document.getElementById('gMeta100Label').textContent  = '🎯 Objetivo em ' + ETAPAS + ' etapas';
+  document.getElementById('gMeta100').textContent       = fmt(pMeta[ETAPAS]);
+  document.getElementById('gMeta100pct').innerHTML      = 'com <span>' + cfg.meta_pct + '</span>%/etapa';
+  document.getElementById('gLegendaMeta').textContent   = cfg.meta_pct;
+  document.getElementById('gBancaAtual').textContent    = etapasReais > 0 ? fmt(capitalAtual) : '—';
+  document.getElementById('gDiferencaMeta').textContent = etapasReais > 0
+    ? (dif >= 0 ? '▲ +' : '▼ ') + fmt(Math.abs(dif)) + ' (' + (difP >= 0 ? '+' : '') + difP.toFixed(1) + '%)'
+    : 'sem etapas concluídas ainda';
+  document.getElementById('gDiferencaMeta').style.color = dif >= 0 ? '#27ae60' : '#c42b1c';
+
+  const isDark   = document.body.classList.contains('dark-mode');
+  const gridClr  = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+  const tickClr  = isDark ? '#7a8099' : '#9e9e9e';
+  const tooltipBg = isDark ? '#1a1d27' : '#fff';
+  const tooltipBorder = isDark ? '#2e3347' : '#d0d0d0';
+  const tooltipTitle = isDark ? '#e8eaf0' : '#1a1a1a';
+  const tooltipBody  = isDark ? '#e8eaf0' : '#1a1a1a';
+
+  const chkP = document.getElementById('chkProjecao').checked;
+  const chkO = document.getElementById('chkCenarioOtimista').checked;
+  const chkC = document.getElementById('chkCenarioConservador').checked;
+  const dadosR = labelsX.map((_, i) => i < pontosReais.length ? pontosReais[i] : null);
+
+  const datasets = [{
+    label: '🔵 Real (etapas)', data: dadosR,
+    borderColor: '#0078d4', backgroundColor: 'rgba(0,120,212,0.08)',
+    borderWidth: 3,
+    pointRadius: dadosR.map((v,i) => v!==null&&(i===0||dadosR[i+1]===null||dadosR[i+1]===undefined)?7:v!==null?3:0),
+    pointBackgroundColor: '#0078d4',
+    fill: false, tension: 0.3, spanGaps: false, order: 1,
+  }];
+  if (chkP) datasets.push({ label:'🟢 Projeção Meta (' + cfg.meta_pct + '%)', data:pMeta, borderColor:'#27ae60', backgroundColor:'rgba(39,174,96,0.05)', borderWidth:2, borderDash:[6,4], pointRadius:0, fill:false, tension:0.3, order:2 });
+  if (chkO) datasets.push({ label:'🟡 Cenário +50%', data:pOtim, borderColor:'#c7760a', backgroundColor:'transparent', borderWidth:1.5, borderDash:[3,5], pointRadius:0, fill:false, tension:0.3, order:3 });
+  if (chkC) datasets.push({ label:'🔴 Cenário -50%', data:pCons, borderColor:'#c42b1c', backgroundColor:'transparent', borderWidth:1.5, borderDash:[3,5], pointRadius:0, fill:false, tension:0.3, order:4 });
+
+  const ctx = document.getElementById('graficoCrescimento').getContext('2d');
+  if (_chartInstance) { _chartInstance.destroy(); _chartInstance = null; }
+  _chartInstance = new Chart(ctx, {
+    type: 'line', data: { labels: labelsX, datasets },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins: {
+        legend:{ position:'top', labels:{ font:{family:'DM Sans',size:12}, color: tickClr, usePointStyle:true, padding:16 } },
+        tooltip:{
+          backgroundColor: tooltipBg, borderColor: tooltipBorder, borderWidth:1,
+          titleColor: tooltipTitle, bodyColor: tooltipBody,
+          titleFont:{family:'Syne',size:12,weight:'bold'}, bodyFont:{family:'DM Mono',size:12}, padding:14,
+          callbacks:{
+            title: c => c[0].label,
+            label: c => {
+              if (c.raw === null) return null;
+              return '  ' + c.dataset.label.replace(/[🔵🟢🟡🔴]\s/,'') + ': R$ ' +
+                c.raw.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+            },
+            afterBody: c => {
+              const idx = c[0].dataIndex;
+              if (idx > 0 && idx < pontosReais.length) {
+                const d2 = pontosReais[idx] - pMeta[idx];
+                const p2 = (d2/pMeta[idx]*100).toFixed(1);
+                return ['', '  Δ vs objetivo: '+(d2>=0?'+':'')+'R$ '+
+                  Math.abs(d2).toLocaleString('pt-BR',{minimumFractionDigits:2})+
+                  ' ('+(d2>=0?'+':'')+p2+'%)'];
+              }
+              return [];
+            }
+          }
+        },
+      },
+      scales:{
+        x:{ grid:{color: gridClr}, ticks:{font:{family:'DM Mono',size:10},color: tickClr,maxTicksLimit:15,maxRotation:45} },
+        y:{ grid:{color: gridClr}, ticks:{
+          font:{family:'DM Mono',size:11},color: tickClr,
+          callback: v=>'R$ '+(v>=1000?(v/1000).toLocaleString('pt-BR',{minimumFractionDigits:1})+'k':v.toLocaleString('pt-BR',{minimumFractionDigits:0}))
+        }}
+      }
+    }
+  });
+
+  // Tabela de marcos
+  const tbody = document.getElementById('tabelaProjecao');
+  tbody.innerHTML = '';
+  const step = Math.round(ETAPAS / 10);
+  const marcos = [];
+  for (let i = 0; i <= 10; i++) marcos.push(Math.min(i * step, ETAPAS));
+  marcos.forEach(etapa => {
+    const rv   = pontosReais[etapa] !== undefined ? pontosReais[etapa] : null;
+    const mv   = pMeta[etapa];
+    const dif2 = rv !== null ? rv - mv : null;
+    const dfP  = dif2 !== null ? (dif2/mv*100).toFixed(1) : null;
+    const tr   = document.createElement('tr');
+    if (rv !== null) tr.className = dif2 >= 0 ? 'row-pos' : 'row-neg';
+    tr.innerHTML =
+      '<td class="mono" style="font-weight:700;color:var(--accent)">Etapa ' + etapa + '</td>' +
+      '<td class="mono" style="color:#27ae60;font-weight:700">' + fmt(mv) + '</td>' +
+      '<td class="mono" style="color:var(--gold)">' + fmt(pOtim[etapa]) + '</td>' +
+      '<td class="mono" style="color:var(--red)">' + fmt(pCons[etapa]) + '</td>' +
+      '<td class="mono" style="font-weight:700;color:var(--accent)">' + (rv!==null?fmt(rv):'—') + '</td>' +
+      '<td class="mono" style="color:' + (dif2===null?'var(--muted)':dif2>=0?'#27ae60':'var(--red)') + '">' +
+      (dif2!==null?(dif2>=0?'▲ +':'▼ ')+fmt(Math.abs(dif2))+' ('+(dif2>=0?'+':'')+dfP+'%)':'—') + '</td>';
+    tbody.appendChild(tr);
+  });
+}
+// histData field removed - etapas system
+</script>
+</body>
+</html>
