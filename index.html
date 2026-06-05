@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Locações — QNN 17 CJ A</title>
+<style>
+  :root{
+    --ink:#1c2733; --paper:#f4f1ea; --card:#ffffff; --line:#d9d2c4;
+    --brand:#0a4d3c; --brand2:#16735a; --accent:#b8852a; --muted:#6b6357;
+    --danger:#a02b2b; --ok:#2f7d4f; --shadow:0 1px 0 rgba(0,0,0,.04),0 8px 24px -12px rgba(28,39,51,.25);
+    --mono:"Courier New",monospace; --sans:Arial,Helvetica,sans-serif;
+  }
+  [data-theme="dark"]{
+    --ink:#e8e4da; --paper:#161a17; --card:#1f2521; --line:#2f3a33;
+    --brand:#3fae8c; --brand2:#5ec5a3; --accent:#d4a449; --muted:#9aa093;
+    --shadow:0 8px 28px -14px rgba(0,0,0,.7);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:14px;}
+  header{background:var(--brand);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  header h1{font-size:17px;margin:0;letter-spacing:.3px;}
+  header .sub{font-size:11px;opacity:.85;font-family:var(--mono);}
+  header .spacer{flex:1}
+  .btn{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 13px;border-radius:7px;cursor:pointer;font-size:13px;font-family:var(--sans);}
+  .btn:hover{border-color:var(--brand2)}
+  .btn.primary{background:var(--brand2);color:#fff;border-color:var(--brand2)}
+  .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.4)}
+  .btn.danger{color:var(--danger);border-color:var(--danger)}
+  .btn.sm{padding:4px 9px;font-size:12px}
+  .tabs{display:flex;gap:4px;padding:0 20px;background:var(--brand);}
+  .tab{padding:11px 18px;color:#fff;opacity:.7;cursor:pointer;border-bottom:3px solid transparent;font-weight:bold;font-size:13px;}
+  .tab.active{opacity:1;border-bottom-color:var(--accent);}
+  .tab.t-cad.active{border-bottom-color:#d4a449}
+  .tab.t-mes.active{border-bottom-color:#5ec5a3}
+  .tab.t-desc.active{border-bottom-color:#e08a3c}
+  main{padding:22px;max-width:1280px;margin:0 auto;}
+  .panel{display:none;animation:fade .25s ease}
+  .panel.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow);padding:18px;margin-bottom:18px;}
+  .card h2{margin:0 0 4px;font-size:15px;color:var(--brand);}
+  .card .hint{color:var(--muted);font-size:12px;margin:0 0 14px;}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
+  .fld{display:flex;flex-direction:column;gap:4px;}
+  .fld label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+  .fld input,.fld select{padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;}
+  .fld input.num{font-family:var(--mono);text-align:right;}
+  .fld.grow{flex:1;min-width:160px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th,td{padding:8px 9px;border-bottom:1px solid var(--line);text-align:left;}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);background:var(--paper);position:sticky;top:0;}
+  td.num,th.num{font-family:var(--mono);text-align:right;white-space:nowrap;}
+  tr.empty td{color:var(--muted);font-style:italic;}
+  tr.total td{font-weight:bold;background:var(--paper);border-top:2px solid var(--brand);}
+  .tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10.5px;font-weight:bold;}
+  .tag.ocup{background:#dff0e6;color:#2f7d4f}
+  .tag.vazia{background:#f0e6d6;color:#9a6a17}
+  [data-theme="dark"] .tag.ocup{background:#1d3a2a}
+  [data-theme="dark"] .tag.vazia{background:#3a301d}
+  .month-nav{display:flex;align-items:center;gap:10px;}
+  .month-nav .mlabel{font-family:var(--mono);font-size:15px;font-weight:bold;min-width:130px;text-align:center;}
+  .editable{background:transparent;border:1px solid transparent;border-radius:5px;padding:4px 6px;width:90px;font-family:var(--mono);text-align:right;color:var(--ink);font-size:12.5px;}
+  .editable:hover{border-color:var(--line)}
+  .editable:focus{border-color:var(--brand2);background:var(--paper);outline:none}
+  select.cli-sel{padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);font-size:12.5px;max-width:230px;}
+  .scroll{overflow-x:auto}
+  .pillbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .pill{padding:6px 12px;border:1px solid var(--line);border-radius:99px;background:var(--card);font-size:12px;}
+  .pill b{font-family:var(--mono);color:var(--brand)}
+  .pill-ok{border-color:var(--ok)} .pill-ok b{color:var(--ok)}
+  .pill-no{border-color:var(--danger)} .pill-no b{color:var(--danger)}
+  .pay-ok{background:#dff0e6;color:#2f7d4f;border-color:#9bcfb0;font-weight:bold}
+  .pay-no{background:transparent;color:var(--danger);border-color:var(--danger)}
+  [data-theme="dark"] .pay-ok{background:#1d3a2a;color:#7fdca8;border-color:#2f5a42}
+  dialog{border:none;border-radius:12px;padding:0;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);max-width:520px;width:92%;}
+  dialog::backdrop{background:rgba(10,20,15,.45)}
+  .dlg-head{background:var(--brand);color:#fff;padding:14px 18px;font-weight:bold;}
+  .dlg-body{padding:18px;background:var(--card);color:var(--ink)}
+  .dlg-foot{padding:12px 18px;background:var(--card);display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--line)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:600px){.grid2{grid-template-columns:1fr}}
+  .footnote{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:6px}
+  @media print{
+    header,.tabs,.no-print{display:none!important}
+    body{background:#fff}
+    .card{box-shadow:none;border:1px solid #ccc}
+    .panel{display:none!important}
+    .panel.active{display:block!important}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Controle de Locações</h1>
+    <div class="sub">QNN 17 CJ A • Ceilândia Norte/DF • Construtora Andrade</div>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn ghost sm" onclick="toggleTheme()" id="themeBtn">🌙 Escuro</button>
+  <button class="btn ghost sm" onclick="exportCSV()">⬇ CSV</button>
+  <button class="btn ghost sm" onclick="window.print()">🖨 PDF</button>
+  <button class="btn ghost sm" onclick="backup()">💾 Backup</button>
+  <button class="btn ghost sm" onclick="document.getElementById('imp').click()">📂 Restaurar</button>
+  <input type="file" id="imp" accept=".json" style="display:none" onchange="restore(event)">
+</header>
+
+<div class="tabs">
+  <div class="tab t-cad active" onclick="showTab('cad',this)">Cadastro de Salas</div>
+  <div class="tab t-mes" onclick="showTab('mes',this)">Controle Mensal</div>
+</div>
+
+<main>
+  <!-- ===================== CADASTRO ===================== -->
+  <section class="panel active" id="panel-cad">
+    <div class="card">
+      <h2>Cadastro de Salas e Inquilinos</h2>
+      <p class="hint">Cada sala é fixa. O inquilino é quem ocupa hoje — quando alguém sai, basta editar a sala e trocar o ocupante. Os dados base aqui alimentam o controle mensal.</p>
+      <div class="row no-print">
+        <button class="btn primary" onclick="openSala()">+ Nova sala</button>
+      </div>
+    </div>
+    <div class="card scroll">
+      <table id="tblSalas">
+        <thead><tr>
+          <th>Sala</th><th>Inquilino</th><th>CPF/CNPJ</th>
+          <th class="num">Locação base</th><th class="num">IPTU base</th>
+          <th>Status</th><th class="no-print">Ações</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== MENSAL ===================== -->
+  <section class="panel" id="panel-mes">
+    <div class="card">
+      <h2>Controle Mensal</h2>
+      <p class="hint">Selecione o mês. Os inquilinos e valores são herdados do mês anterior (ou do cadastro). Edite os valores que mudam — água, energia, locação e desconto — direto na tabela. Use a coluna <b>Pagamento</b> para marcar quem já quitou. Tudo é salvo automaticamente.</p>
+      <div class="row" style="justify-content:space-between">
+        <div class="month-nav no-print">
+          <button class="btn sm" onclick="changeMonth(-1)">‹ Anterior</button>
+          <span class="mlabel" id="mlabel">—</span>
+          <button class="btn sm" onclick="changeMonth(1)">Próximo ›</button>
+        </div>
+        <button class="btn sm no-print" onclick="inheritMonth()">↺ Herdar do mês anterior</button>
+      </div>
+      <div class="pillbar" id="pills" style="margin-top:14px"></div>
+    </div>
+    <div class="card scroll">
+      <table id="tblMes">
+        <thead><tr>
+          <th>Sala</th><th>Inquilino</th>
+          <th class="num">Locação</th><th class="num">IPTU</th>
+          <th class="num">Água (CAESB)</th><th class="num">Energia (CEB)</th>
+          <th class="num">Desconto</th><th class="num">Valor Documento</th><th>Pagamento</th>
+        </tr></thead>
+        <tbody></tbody>
+        <tfoot></tfoot>
+      </table>
+      <p class="footnote">Negativação após 30 dias corridos do vencimento. Juros 2,00% a.m. e multa 10,00% após 1 dia corrido do vencimento.</p>
+    </div>
+  </section>
+</main>
+
+<!-- modal sala -->
+<dialog id="dlgSala">
+  <div class="dlg-head" id="dlgSalaTitle">Nova sala</div>
+  <div class="dlg-body">
+    <div class="grid2">
+      <div class="fld"><label>Nº / Cód. da sala</label><input id="sNum" placeholder="101"></div>
+      <div class="fld"><label>Status</label><select id="sStatus"><option value="ocup">Ocupada</option><option value="vazia">Vazia</option></select></div>
+      <div class="fld" style="grid-column:1/3"><label>Inquilino</label><input id="sNome" placeholder="Nome completo"></div>
+      <div class="fld"><label>CPF/CNPJ</label><input id="sDoc" placeholder="000.000.000-00"></div>
+      <div class="fld"><label>Leit. Hidrômetro</label><input id="sLeit" placeholder="0143"></div>
+      <div class="fld"><label>Locação base (R$)</label><input class="num" id="sLoc" placeholder="800,00"></div>
+      <div class="fld"><label>IPTU base (R$)</label><input class="num" id="sIptu" placeholder="44,67"></div>
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn" onclick="dlgSala.close()">Cancelar</button>
+    <button class="btn primary" onclick="saveSala()">Salvar</button>
+  </div>
+</dialog>
+
+<script>
+/* ---------- estado ---------- */
+const K_SALAS='loc_salas', K_MES='loc_mes', K_DESC='loc_desc', K_THEME='loc_theme';
+const MIN_MONTH='2026-05';
+let salas = load(K_SALAS, []);
+let meses = load(K_MES, {});      // { "2026-06": { salaNum: {nome,doc,loc,iptu,agua,energia} } }
+let descs = load(K_DESC, []);
+let cur = localStorage.getItem('loc_cur') || '2026-06';
+let editIdx = null;
+
+function load(k,def){try{return JSON.parse(localStorage.getItem(k))??def}catch{return def}}
+function save(){localStorage.setItem(K_SALAS,JSON.stringify(salas));localStorage.setItem(K_MES,JSON.stringify(meses));localStorage.setItem(K_DESC,JSON.stringify(descs));localStorage.setItem('loc_cur',cur);}
+function brl(n){return (Number(n)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function parseNum(s){if(typeof s==='number')return s;return Number(String(s||'').replace(/\./g,'').replace(',','.'))||0;}
+function monthLabel(m){const[y,mo]=m.split('-');const nm=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];return nm[+mo-1]+'/'+y;}
+
+/* ---------- tema ---------- */
+function toggleTheme(){const d=document.documentElement.getAttribute('data-theme')==='dark';document.documentElement.setAttribute('data-theme',d?'light':'dark');document.getElementById('themeBtn').textContent=d?'🌙 Escuro':'☀ Claro';localStorage.setItem(K_THEME,d?'light':'dark');}
+if(localStorage.getItem(K_THEME)==='dark'){document.documentElement.setAttribute('data-theme','dark');document.getElementById('themeBtn').textContent='☀ Claro';}
+
+/* ---------- tabs ---------- */
+function showTab(t,el){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab').forEach(p=>p.classList.remove('active'));document.getElementById('panel-'+t).classList.add('active');el.classList.add('active');}
+
+/* ---------- cadastro ---------- */
+function openSala(idx){
+  editIdx = (idx===undefined)?null:idx;
+  const s = editIdx!==null?salas[editIdx]:{};
+  dlgSalaTitle.textContent = editIdx!==null?'Editar sala '+s.num:'Nova sala';
+  sNum.value=s.num||''; sStatus.value=s.status||'ocup'; sNome.value=s.nome||'';
+  sDoc.value=s.doc||''; sLeit.value=s.leit||''; sLoc.value=s.loc?brl(s.loc):''; sIptu.value=s.iptu?brl(s.iptu):'';
+  dlgSala.showModal();
+}
+function saveSala(){
+  if(!sNum.value.trim()){alert('Informe o número da sala.');return;}
+  const obj={num:sNum.value.trim(),status:sStatus.value,nome:sStatus.value==='vazia'?'VAZIA':sNome.value.trim(),
+    doc:sDoc.value.trim(),leit:sLeit.value.trim(),loc:parseNum(sLoc.value),iptu:parseNum(sIptu.value)};
+  if(editIdx!==null)salas[editIdx]=obj;else salas.push(obj);
+  save();renderSalas();dlgSala.close();
+}
+function delSala(i){if(confirm('Excluir a sala '+salas[i].num+'?')){salas.splice(i,1);save();renderSalas();}}
+function renderSalas(){
+  const tb=document.querySelector('#tblSalas tbody');tb.innerHTML='';
+  salas.sort((a,b)=>String(a.num).localeCompare(String(b.num),'pt',{numeric:true}));
+  if(!salas.length){tb.innerHTML='<tr class="empty"><td colspan="7">Nenhuma sala cadastrada. Clique em “Importar dados do PDF” ou “Nova sala”.</td></tr>';return;}
+  salas.forEach((s,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><b>${s.num}</b></td><td>${s.nome||'—'}</td><td class="num">${s.doc||'—'}</td>
+      <td class="num">${brl(s.loc)}</td><td class="num">${brl(s.iptu)}</td>
+      <td><span class="tag ${s.status==='vazia'?'vazia':'ocup'}">${s.status==='vazia'?'Vazia':'Ocupada'}</span></td>
+      <td class="no-print"><button class="btn sm" onclick="openSala(${i})">Editar</button> <button class="btn sm danger" onclick="delSala(${i})">×</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+/* ---------- mensal ---------- */
+function ensureMonth(m){
+  if(meses[m])return meses[m];
+  // herda do mês anterior se existir, senão do cadastro base
+  const prev = prevMonthKey(m);
+  const base = meses[prev];
+  const data={};
+  salas.forEach(s=>{
+    if(base && base[s.num]){data[s.num]={...base[s.num],pago:false,pagoEm:''};}
+    else{data[s.num]={nome:s.nome,doc:s.doc,loc:s.loc,iptu:s.iptu,agua:0,energia:0,desc:0,pago:false,pagoEm:''};}
+  });
+  meses[m]=data;save();return data;
+}
+function prevMonthKey(m){let[y,mo]=m.split('-').map(Number);mo--;if(mo<1){mo=12;y--;}return y+'-'+String(mo).padStart(2,'0');}
+function nextMonthKey(m){let[y,mo]=m.split('-').map(Number);mo++;if(mo>12){mo=1;y++;}return y+'-'+String(mo).padStart(2,'0');}
+function changeMonth(dir){
+  const nk=dir<0?prevMonthKey(cur):nextMonthKey(cur);
+  if(dir<0 && nk<MIN_MONTH){alert('Mês mínimo: '+monthLabel(MIN_MONTH));return;}
+  cur=nk;save();renderMes();
+}
+function inheritMonth(){
+  const prev=prevMonthKey(cur);
+  if(!meses[prev]){alert('Não há dados no mês anterior ('+monthLabel(prev)+').');return;}
+  if(confirm('Substituir os dados de '+monthLabel(cur)+' pelos do mês anterior?')){
+    meses[cur]=JSON.parse(JSON.stringify(meses[prev]));save();renderMes();
+  }
+}
+function renderMes(){
+  document.getElementById('mlabel').textContent=monthLabel(cur);
+  const data=ensureMonth(cur);
+  const tb=document.querySelector('#tblMes tbody');tb.innerHTML='';
+  const tot={loc:0,iptu:0,agua:0,energia:0,desc:0,doc:0,pago:0,aberto:0};
+  Object.keys(data).sort((a,b)=>String(a).localeCompare(String(b),'pt',{numeric:true})).forEach(num=>{
+    const r=data[num];const desc=parseNum(r.desc);
+    const docVal=(parseNum(r.loc)+parseNum(r.iptu)+parseNum(r.agua)+parseNum(r.energia)-desc);
+    const vazia=(r.nome==='VAZIA'||!r.nome);
+    tot.loc+=parseNum(r.loc);tot.iptu+=parseNum(r.iptu);tot.agua+=parseNum(r.agua);tot.energia+=parseNum(r.energia);tot.desc+=desc;tot.doc+=docVal;
+    if(!vazia){ if(r.pago)tot.pago+=docVal; else tot.aberto+=docVal; }
+    const tr=document.createElement('tr');if(vazia)tr.className='empty';
+    let payCell;
+    if(vazia){payCell='<td>—</td>';}
+    else if(r.pago){
+      payCell=`<td><button class="btn sm pay-ok" onclick="togglePago('${num}')" title="${r.pagoEm?'Pago em '+r.pagoEm:''}">✔ Pago${r.pagoEm?' · '+r.pagoEm:''}</button></td>`;
+    }else{
+      payCell=`<td><button class="btn sm pay-no" onclick="togglePago('${num}')">Marcar pago</button></td>`;
+    }
+    tr.innerHTML=`<td><b>${num}</b></td><td>${r.nome||'—'}</td>
+      <td class="num"><input class="editable" value="${brl(r.loc)}" onchange="setVal('${num}','loc',this.value)"></td>
+      <td class="num"><input class="editable" value="${brl(r.iptu)}" onchange="setVal('${num}','iptu',this.value)"></td>
+      <td class="num"><input class="editable" value="${brl(r.agua)}" onchange="setVal('${num}','agua',this.value)"></td>
+      <td class="num"><input class="editable" value="${brl(r.energia)}" onchange="setVal('${num}','energia',this.value)"></td>
+      <td class="num"><input class="editable" value="${brl(r.desc)}" onchange="setVal('${num}','desc',this.value)"></td>
+      <td class="num"><b>${brl(docVal)}</b></td>${payCell}`;
+    tb.appendChild(tr);
+  });
+  document.querySelector('#tblMes tfoot').innerHTML=`<tr class="total"><td colspan="2">TOTAL</td>
+    <td class="num">${brl(tot.loc)}</td><td class="num">${brl(tot.iptu)}</td><td class="num">${brl(tot.agua)}</td>
+    <td class="num">${brl(tot.energia)}</td><td class="num">${brl(tot.desc)}</td><td class="num">${brl(tot.doc)}</td><td></td></tr>`;
+  const ocup=Object.values(data).filter(r=>r.nome&&r.nome!=='VAZIA').length;
+  const pagos=Object.values(data).filter(r=>r.nome&&r.nome!=='VAZIA'&&r.pago).length;
+  const devendo=ocup-pagos;
+  document.getElementById('pills').innerHTML=
+    `<span class="pill">Salas: <b>${Object.keys(data).length}</b></span>
+     <span class="pill">Ocupadas: <b>${ocup}</b></span>
+     <span class="pill">Total a receber: <b>R$ ${brl(tot.doc)}</b></span>
+     <span class="pill pill-ok">Recebido: <b>R$ ${brl(tot.pago)}</b> (${pagos})</span>
+     <span class="pill pill-no">Em aberto: <b>R$ ${brl(tot.aberto)}</b> (${devendo})</span>`;
+}
+function setVal(num,field,val){meses[cur][num][field]=parseNum(val);save();renderMes();}
+function togglePago(num){
+  const r=meses[cur][num];
+  r.pago=!r.pago;
+  r.pagoEm=r.pago?new Date().toLocaleDateString('pt-BR'):'';
+  save();renderMes();
+}
+
+/* ---------- carga inicial (dados base, só na primeira vez) ---------- */
+function seedInicial(){
+  const pdf=[
+    ['000','MARIO LUCIO DA SILVA NUNES','833.957.333-00',4622.85,141.25,0,0],
+    ['101','VANUBIA ALVES','030.871.021-56',835.45,44.67,81.58,0],
+    ['102','VALDILENE RODRIGUES COST','020.632.481-25',856.70,44.67,10.00,0],
+    ['103','SARA PASSOS ROCHA','052.576.911-08',800.00,44.67,49.34,0],
+    ['104','VAZIA','',0,0,0,0],
+    ['105','ANA CLAUDIA MELO DOS SANTOS','067.472.041-58',800.00,44.67,55.36,0],
+    ['201','EDUARDO SEBASTIAO DE LIMA','646.626.321-53',800.00,44.67,31.86,0],
+    ['202','FERNANDO DA SILVA MENEZE','023.900.261-09',877.22,44.67,53.72,0],
+    ['203','MARIANA PEREIRA DA SILVA','065.272.671-26',900.00,44.67,30.22,0],
+    ['204','JULLY MARQUES DE OLIVEIRA FRANCA','064.794.021-38',800.00,44.67,91.97,0],
+    ['205','LUCIANA PEREIRA DE SOUSA','855.421.721-72',800.00,44.67,49.89,0],
+    ['301','FRANCISCO GABRIEL OLIVEIRA MARQUES','078.132.351-77',850.00,44.67,64.64,0],
+    ['302','RAYANE ELLEN VIDAL NEVES','058.298.251-04',851.28,44.67,32.95,0],
+    ['303','VAZIA','',0,0,0,0],
+    ['304','KARLA CINTIA VIEIRA DE SOUSA','043.346.221-35',787.50,44.67,91.97,0],
+    ['305','DANUZZE DANNY SILVA DOS ANJOS ALMEIDA','016.239.991-03',800.00,44.67,86.50,0],
+  ];
+  pdf.forEach(([num,nome,doc,loc,iptu,agua,energia])=>{
+    salas.push({num,status:nome==='VAZIA'?'vazia':'ocup',nome,doc,leit:'',loc,iptu});
+  });
+  const m='2026-06';meses[m]=meses[m]||{};
+  pdf.forEach(([num,nome,doc,loc,iptu,agua,energia])=>{
+    meses[m][num]={nome,doc,loc,iptu,agua,energia,desc:0,pago:false,pagoEm:''};
+  });
+  save();
+}
+
+/* ---------- export ---------- */
+function exportCSV(){
+  const data=meses[cur]||{};let rows=[['Sala','Inquilino','CPF/CNPJ','Locacao','IPTU','Agua','Energia','Desconto','ValorDocumento','Status','PagoEm']];
+  Object.keys(data).sort((a,b)=>String(a).localeCompare(String(b),'pt',{numeric:true})).forEach(num=>{
+    const r=data[num],desc=parseNum(r.desc);
+    const dv=parseNum(r.loc)+parseNum(r.iptu)+parseNum(r.agua)+parseNum(r.energia)-desc;
+    const vazia=(r.nome==='VAZIA'||!r.nome);
+    const status=vazia?'':(r.pago?'Pago':'Em aberto');
+    rows.push([num,r.nome,r.doc||'',brl(r.loc),brl(r.iptu),brl(r.agua),brl(r.energia),brl(desc),brl(dv),status,r.pagoEm||'']);
+  });
+  const csv=rows.map(r=>r.map(c=>`"${c}"`).join(';')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='locacoes-'+cur+'.csv';a.click();
+}
+function backup(){
+  const blob=new Blob([JSON.stringify({salas,meses,descs},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='backup-locacoes-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+}
+function restore(e){
+  const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);salas=d.salas||[];meses=d.meses||{};descs=d.descs||[];save();renderSalas();renderMes();alert('Backup restaurado.');}catch{alert('Arquivo inválido.');}};
+  r.readAsText(f);
+}
+
+/* ---------- init ---------- */
+if(!salas.length) seedInicial();
+renderSalas();renderMes();
+</script>
+</body>
+</html>
