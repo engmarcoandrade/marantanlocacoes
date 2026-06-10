@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Locações — Integrado ao Drive</title>
+<style>
+  :root{
+    --ink:#1c2733; --paper:#f4f1ea; --card:#ffffff; --line:#d9d2c4;
+    --brand:#0a4d3c; --brand2:#16735a; --accent:#b8852a; --muted:#6b6357;
+    --danger:#a02b2b; --ok:#2f7d4f; --shadow:0 1px 0 rgba(0,0,0,.04),0 8px 24px -12px rgba(28,39,51,.25);
+    --mono:"Courier New",monospace; --sans:Arial,Helvetica,sans-serif;
+  }
+  [data-theme="dark"]{
+    --ink:#e8e4da; --paper:#161a17; --card:#1f2521; --line:#2f3a33;
+    --brand:#3fae8c; --brand2:#5ec5a3; --accent:#d4a449; --muted:#9aa093;
+    --shadow:0 8px 28px -14px rgba(0,0,0,.7);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:14px;transition: opacity 0.3s;}
+  header{background:var(--brand);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  header h1{font-size:17px;margin:0;}
+  header .spacer{flex:1}
+  .btn{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 13px;border-radius:7px;cursor:pointer;font-size:13px;font-family:var(--sans);}
+  .btn:hover{border-color:var(--brand2)}
+  .btn.primary{background:var(--brand2);color:#fff;border-color:var(--brand2)}
+  .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.4)}
+  .btn.ghost:hover{background:rgba(255,255,255,.1)}
+  .btn.sm{padding:4px 9px;font-size:12px}
+  .month-nav{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.1);padding:4px 8px;border-radius:8px;}
+  .month-nav .mlabel{font-family:var(--mono);font-size:14px;font-weight:bold;min-width:100px;text-align:center;}
+  
+  .tabs{display:flex;gap:4px;padding:0 20px;background:var(--brand);overflow-x:auto;}
+  .tab{padding:11px 16px;color:#fff;opacity:.7;cursor:pointer;border-bottom:3px solid transparent;font-weight:bold;font-size:13px;white-space:nowrap;}
+  .tab.active{opacity:1;border-bottom-color:var(--accent);}
+  
+  main{padding:22px;max-width:1280px;margin:0 auto;}
+  .panel{display:none;animation:fade .25s ease}
+  .panel.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+  
+  .card{background:var(--card);border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow);padding:18px;margin-bottom:18px;}
+  .card h2{margin:0 0 4px;font-size:15px;color:var(--brand);}
+  .card .hint{color:var(--muted);font-size:12px;margin:0 0 14px;}
+  
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
+  .fld{display:flex;flex-direction:column;gap:4px;}
+  .fld label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+  .fld input,.fld select{padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;}
+  .fld input.num{font-family:var(--mono);text-align:right;}
+  
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:10px;}
+  th,td{padding:8px 9px;border-bottom:1px solid var(--line);text-align:left;}
+  th{font-size:11px;text-transform:uppercase;color:var(--muted);background:var(--paper);}
+  td.num,th.num{font-family:var(--mono);text-align:right;}
+  td.center,th.center{text-align:center;}
+  tr.empty td{color:var(--muted);font-style:italic;}
+  tr.total td{font-weight:bold;background:var(--paper);border-top:2px solid var(--brand);}
+  
+  .tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10.5px;font-weight:bold;}
+  .tag.ocup{background:#dff0e6;color:#2f7d4f}
+  .tag.vazia{background:#f0e6d6;color:#9a6a17}
+  
+  .editable{background:transparent;border:1px solid var(--line);border-radius:5px;padding:4px 6px;width:90px;font-family:var(--mono);text-align:right;color:var(--ink);font-size:12.5px;}
+  .editable:focus{border-color:var(--brand2);background:var(--paper);outline:none}
+  
+  .global-input{background:var(--paper);padding:14px;border-radius:8px;border:1px dashed var(--brand);margin-bottom:14px;display:inline-block;}
+  .global-input label{font-weight:bold;margin-right:8px;color:var(--brand);}
+  
+  dialog{border:none;border-radius:12px;padding:0;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);max-width:520px;width:92%;}
+  dialog::backdrop{background:rgba(10,20,15,.45)}
+  .dlg-head{background:var(--brand);color:#fff;padding:14px 18px;font-weight:bold;}
+  .dlg-body{padding:18px;background:var(--card);color:var(--ink)}
+  .dlg-foot{padding:12px 18px;background:var(--card);display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--line)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  
+  #statusNuvem { font-size: 11px; color: rgba(255,255,255,0.7); margin-left: 10px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Locações</h1>
+  </div>
+  <div class="month-nav">
+    <button class="btn sm ghost" onclick="mudarMes(-1)">‹</button>
+    <span class="mlabel" id="mlabel">--/----</span>
+    <button class="btn sm ghost" onclick="mudarMes(1)">›</button>
+  </div>
+  <div class="spacer"></div>
+  <span id="statusNuvem">Carregando nuvem...</span>
+  <button class="btn sm ghost" onclick="exportarExcel()">📊 Excel</button>
+  <button class="btn sm ghost" onclick="fazerBackup()">💾 Backup Local</button>
+  <button class="btn sm ghost" onclick="document.getElementById('fileRestore').click()">📂 Restaurar Backup</button>
+  <input type="file" id="fileRestore" style="display:none" accept=".json" onchange="restaurarBackup(event)">
+  <button class="btn sm ghost" onclick="toggleTheme()">🌙</button>
+</header>
+
+<div class="tabs">
+  <div class="tab t-cad active" onclick="showTab('cad',this)">Cadastro de Salas</div>
+  <div class="tab" onclick="showTab('iptu',this)">IPTU</div>
+  <div class="tab" onclick="showTab('agua',this)">Água (CAESB)</div>
+  <div class="tab" onclick="showTab('energia',this)">Energia (CEB)</div>
+  <div class="tab" onclick="showTab('extra',this)">Extras</div>
+  <div class="tab" onclick="showTab('resumo',this)">Resumo Mensal</div>
+</div>
+
+<main>
+  <section class="panel active" id="panel-cad">
+    <div class="card">
+      <h2>Cadastro Fixo das Salas</h2>
+      <button class="btn primary" onclick="openSala()">+ Nova Sala</button>
+      <div style="overflow-x:auto;">
+        <table id="tblSalas">
+          <thead><tr>
+            <th>Sala</th><th>Status</th><th>Inquilino</th>
+            <th class="num">Locação (R$)</th><th class="num">IPTU Anual (R$)</th><th class="num">Leit. Água Inicial</th><th>Ações</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-iptu">
+    <div class="card">
+      <h2>Rateio de IPTU</h2>
+      <div style="overflow-x:auto;">
+        <table id="tblIptu">
+          <thead><tr>
+            <th>Sala</th><th>Inquilino</th><th class="num">IPTU Anual</th><th class="num">Valor Mensal</th><th class="center">Cobrar neste mês?</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-agua">
+    <div class="card">
+      <h2>Rateio de Água (CAESB)</h2>
+      <div class="global-input">
+        <label>Valor Total da Fatura (R$):</label>
+        <input type="text" class="editable num" id="inpCaesbTotal" onchange="salvarGlobal('caesb', this.value)">
+      </div>
+      <div style="overflow-x:auto;">
+        <table id="tblAgua">
+          <thead><tr>
+            <th>Sala</th><th>Inquilino</th><th class="num">Leitura Ant.</th><th class="num">Leitura Atual</th><th class="num">Consumo</th><th class="num">Rateio (R$)</th><th class="center">Cobrar neste mês?</th>
+          </tr></thead>
+          <tbody></tbody>
+          <tfoot></tfoot>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-energia">
+    <div class="card">
+      <h2>Rateio de Energia (CEB / Equatorial)</h2>
+      <div class="global-input">
+        <label>Valor Total da Fatura (R$):</label>
+        <input type="text" class="editable num" id="inpCebTotal" onchange="salvarGlobal('ceb', this.value)">
+      </div>
+      <div id="cebInfo" style="margin-bottom: 10px; font-weight: bold; color: var(--brand);"></div>
+      <div style="overflow-x:auto;">
+        <table id="tblEnergia">
+          <thead><tr><th>Sala</th><th>Inquilino</th><th>Status</th><th class="num">Rateio (R$)</th><th class="center">Cobrar neste mês?</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-extra">
+    <div class="card">
+      <h2>Despesas ou Receitas Extras</h2>
+      <div style="overflow-x:auto;">
+        <table id="tblExtra">
+          <thead><tr>
+            <th>Sala</th><th>Inquilino</th><th>Descrição</th><th class="num">Valor Avulso (R$)</th><th class="center">Cobrar neste mês?</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-resumo">
+    <div class="card">
+      <h2>Resumo Mensal e Fechamento</h2>
+      <div style="overflow-x:auto;">
+        <table id="tblResumo">
+          <thead><tr>
+            <th>Sala</th><th>Inquilino</th>
+            <th class="num">Locação</th><th class="num">IPTU</th><th class="num">Água</th><th class="num">Energia</th><th class="num">Extras</th>
+            <th class="num">TOTAL</th><th class="center">Pagamento</th>
+          </tr></thead>
+          <tbody></tbody>
+          <tfoot></tfoot>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<dialog id="dlgSala">
+  <div class="dlg-head" id="dlgSalaTitle">Sala</div>
+  <div class="dlg-body">
+    <div class="grid2">
+      <div class="fld"><label>Número da Sala</label><input id="sNum" placeholder="Ex: 101"></div>
+      <div class="fld"><label>Status</label><select id="sStatus"><option value="ocup">Ocupada</option><option value="vazia">Vazia</option></select></div>
+      <div class="fld" style="grid-column:1/3"><label>Inquilino</label><input id="sNome" placeholder="Nome completo"></div>
+      <div class="fld"><label>Locação Mensal (R$)</label><input class="num" id="sLoc" placeholder="800,00"></div>
+      <div class="fld"><label>IPTU ANUAL (R$)</label><input class="num" id="sIptu" placeholder="536,00"></div>
+      <div class="fld"><label>Leitura Água INICIAL</label><input class="num" id="sLeit" placeholder="0"></div>
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn" onclick="dlgSala.close()">Cancelar</button>
+    <button class="btn primary" onclick="salvarNovaSala()">Salvar</button>
+  </div>
+</dialog>
+
+<script>
+// --- FUNÇÕES UTILITÁRIAS ---
+function brl(n){ return (Number(n)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function parseNum(s){ if(typeof s==='number')return s; return Number(String(s||'').replace(/\./g,'').replace(',','.'))||0; }
+function formatMonth(m){ const[y,mo]=m.split('-'); return `${mo}/${y}`; }
+
+// --- INTEGRAÇÃO COM GOOGLE DRIVE ---
+const API_URL = 'https://script.google.com/macros/s/AKfycbwa0jn0vGtkHOAvTvqp-rjs-34AM5Ke1hpvTc3HH9KwwzbnGnKDqo-EjPTvbanIW_4Obw/exec'; 
+
+let salas = {};
+let meses = {};
+let curMonth = localStorage.getItem('loc_v3_cur') || new Date().toISOString().slice(0,7);
+let editKey = null;
+
+// Busca dados da Planilha ao iniciar
+async function carregarDaNuvem() {
+  document.body.style.opacity = '0.5'; 
+  const statusEl = document.getElementById('statusNuvem');
+  statusEl.innerText = "Sincronizando com Drive...";
+  try {
+    const resposta = await fetch(API_URL);
+    const dados = await resposta.json();
+    
+    if(dados.salas) salas = dados.salas;
+    if(dados.meses) meses = dados.meses;
+    
+    statusEl.innerText = "✔ Conectado";
+    renderAll();
+  } catch (erro) {
+    statusEl.innerText = "❌ Erro na Conexão";
+    alert("Erro ao conectar com a Planilha. O sistema iniciará com dados vazios até que a conexão volte.");
+    console.error(erro);
+    renderAll();
+  } finally {
+    document.body.style.opacity = '1';
+  }
+}
+
+// Salva na Planilha
+let timerSalvamento;
+function salvarDados() {
+  renderAll(); // Atualiza a tela primeiro
+  const statusEl = document.getElementById('statusNuvem');
+  statusEl.innerText = "Salvando...";
+  
+  clearTimeout(timerSalvamento);
+  timerSalvamento = setTimeout(async () => {
+    try {
+      await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ salas: salas, meses: meses }),
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+      });
+      statusEl.innerText = "✔ Salvo no Drive";
+    } catch (erro) {
+      statusEl.innerText = "❌ Erro ao salvar";
+      console.error("Erro ao salvar:", erro);
+    }
+  }, 1500); 
+}
+
+// --- FUNÇÃO DE RESTAURAÇÃO DE BACKUP LOCAL ---
+function restaurarBackup(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if(data.salas && data.meses) {
+        salas = data.salas;
+        meses = data.meses;
+        // Salva na planilha automaticamente após carregar o arquivo
+        salvarDados();
+        alert('Backup local restaurado e sincronizado com o Drive com sucesso!');
+      } else {
+        alert('O arquivo selecionado não tem o formato correto de backup.');
+      }
+    } catch (err) {
+      alert('Erro ao ler o arquivo de backup.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function fazerBackup(){
+  const blob = new Blob([JSON.stringify({salas, meses}, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `backup-locacoes-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function exportarExcel(){
+  const { calc } = calcularCompetencia();
+  let csv = "Sala;Inquilino;Locacao;IPTU;Agua;Energia;Extras;Total;Status_Pagamento\n";
+  
+  Object.keys(calc).sort((a,b)=>a.localeCompare(b, undefined, {numeric:true})).forEach(num => {
+    const c = calc[num];
+    if (c.isOcup) {
+      const statPagamento = c.u.pago ? "Pago" : "Pendente";
+      csv += `"${num}";"${c.s.nome}";"${brl(c.s.loc)}";"${brl(c.valorIptu)}";"${brl(c.valorAgua)}";"${brl(c.valorCeb)}";"${brl(parseNum(c.u.extra_valor))}";"${brl(c.total)}";"${statPagamento}"\n`;
+    }
+  });
+
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `Relatorio_Mensal_${curMonth}.csv`;
+  link.click();
+}
+
+// --- TEMA E ABAS ---
+function toggleTheme(){
+  const isDark = document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+}
+function showTab(id, el){
+  document.querySelectorAll('.panel, .tab').forEach(e => e.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  el.classList.add('active');
+  renderAll();
+}
+
+// --- NAVEGAÇÃO DE MESES ---
+function mudarMes(dir){
+  let [y, m] = curMonth.split('-').map(Number);
+  m += dir;
+  if(m<1){ m=12; y--; } else if(m>12){ m=1; y++; }
+  curMonth = `${y}-${String(m).padStart(2,'0')}`;
+  localStorage.setItem('loc_v3_cur', curMonth);
+  garantirMes(curMonth);
+  renderAll(); 
+}
+function mesAnterior(m){
+  let [y, mo] = m.split('-').map(Number);
+  mo--; if(mo<1){ mo=12; y--; }
+  return `${y}-${String(mo).padStart(2,'0')}`;
+}
+
+// --- INICIALIZAÇÃO DE DADOS MESAIS ---
+function garantizarMes(m){
+  let alterouEstrutura = false;
+  if(!meses[m]){
+    meses[m] = { globais: { caesb: 0, ceb: 0 }, unidades: {} };
+    alterouEstrutura = true;
+  }
+  Object.keys(salas).forEach(num => {
+    if(!meses[m].unidades[num]){
+      meses[m].unidades[num] = {
+        iptu_cobrar: true, agua_cobrar: true, ceb_cobrar: true, extra_cobrar: true,
+        agua_leitura: '', extra_valor: 0, extra_desc: '', pago: false
+      };
+      alterouEstrutura = true;
+    }
+  });
+  if(alterouEstrutura) salvarDados();
+}
+
+// --- CADASTRO DE SALAS ---
+function openSala(k){
+  editKey = k;
+  const s = k ? salas[k] : {status:'ocup', leit:0, loc:0, iptu:0};
+  sNum.value = k || ''; sNum.disabled = !!k;
+  sStatus.value = s.status; sNome.value = s.nome || '';
+  sLoc.value = brl(s.loc); sIptu.value = brl(s.iptu); sLeit.value = s.leit;
+  dlgSala.showModal();
+}
+function salvarNovaSala(){
+  const k = sNum.value.trim();
+  if(!k) return alert('Informe a sala.');
+  salas[k] = {
+    status: sStatus.value,
+    nome: sStatus.value === 'vazia' ? 'VAZIA' : sNome.value.trim(),
+    loc: parseNum(sLoc.value),
+    iptu: parseNum(sIptu.value),
+    leit: parseNum(sLeit.value)
+  };
+  garantirMes(curMonth);
+  dlgSala.close(); 
+  salvarDados();
+}
+function excluirSala(k){
+  if(confirm(`Excluir sala ${k}?`)){ delete salas[k]; salvarDados(); }
+}
+
+// --- SALVAR DADOS DA TABELA ---
+function salvarGlobal(tipo, val){ meses[curMonth].globais[tipo] = parseNum(val); salvarDados(); }
+function salvarUnit(num, campo, val){ 
+  if(campo.includes('cobrar')) meses[curMonth].unidades[num][campo] = val; 
+  else if(campo==='extra_desc') meses[curMonth].unidades[num][campo] = val;
+  else if(campo==='agua_leitura') meses[curMonth].unidades[num][campo] = val === '' ? '' : parseNum(val);
+  else meses[curMonth].unidades[num][campo] = parseNum(val); 
+  salvarDados(); 
+}
+function togglePago(num){ meses[curMonth].unidades[num].pago = !meses[curMonth].unidades[num].pago; salvarDados(); }
+
+// --- RENDERIZAÇÃO E LÓGICA CORE ---
+function getLeituraAnterior(num, m){
+  const prev = mesAnterior(m);
+  if(meses[prev] && meses[prev].unidades[num] && meses[prev].unidades[num].agua_leitura !== '') {
+    return meses[prev].unidades[num].agua_leitura;
+  }
+  return salas[num].leit || 0;
+}
+
+function calcularCompetencia(){
+  const mDados = meses[curMonth] || {globais:{caesb:0,ceb:0}, unidades:{}};
+  let totConsumo = 0;
+  let ocupadas = 0;
+  
+  const calc = {};
+  Object.keys(salas).forEach(num => {
+    const s = salas[num];
+    const u = mDados.unidades[num] || {};
+    
+    const lAnt = getLeituraAnterior(num, curMonth);
+    const lAtual = u.agua_leitura !== '' && u.agua_leitura !== undefined ? u.agua_leitura : lAnt;
+    const consumo = Math.max(0, lAtual - lAnt);
+    totConsumo += consumo;
+
+    const isOcup = s.status === 'ocup';
+    if(isOcup) ocupadas++;
+
+    calc[num] = { s, u, lAnt, lAtual, consumo, isOcup, valorAgua: 0, valorCeb: 0, valorIptu: 0 };
+  });
+
+  Object.keys(calc).forEach(num => {
+    const c = calc[num];
+    c.valorAgua = c.u.agua_cobrar && totConsumo > 0 ? (c.consumo / totConsumo) * mDados.globais.caesb : 0;
+    c.valorCeb = c.u.ceb_cobrar && c.isOcup && ocupadas > 0 ? (mDados.globais.ceb / ocupadas) : 0;
+    c.valorIptu = c.u.iptu_cobrar ? (c.s.iptu / 12) : 0;
+    let valorExtra = c.u.extra_cobrar ? parseNum(c.u.extra_valor) : 0;
+
+    c.total = c.isOcup ? (c.s.loc + c.valorIptu + c.valorAgua + c.valorCeb + valorExtra) : 0;
+  });
+
+  return { calc, totConsumo, ocupadas };
+}
+
+function renderAll(){
+  if(!meses[curMonth]) {
+    meses[curMonth] = { globais: { caesb: 0, ceb: 0 }, unidades: {} };
+  }
+  
+  document.getElementById('mlabel').textContent = formatMonth(curMonth);
+  const mDados = meses[curMonth];
+  const { calc, totConsumo, ocupadas } = calcularCompetencia();
+  
+  document.getElementById('inpCaesbTotal').value = brl(mDados.globais.caesb);
+  document.getElementById('inpCebTotal').value = brl(mDados.globais.ceb);
+  document.getElementById('cebInfo').innerText = `Salas Ocupadas: ${ocupadas} | Base rateio por sala: R$ ${brl(ocupadas > 0 ? mDados.globais.ceb / ocupadas : 0)}`;
+
+  let hCad='', hIptu='', hAgua='', hCeb='', hExt='', hRes='';
+  let tLoc=0, tIptu=0, tAgua=0, tCeb=0, tExt=0, tGeral=0;
+
+  const chaves = Object.keys(salas).sort((a,b)=>a.localeCompare(b, undefined, {numeric:true}));
+  
+  chaves.forEach(num => {
+    const { s, u, lAnt, consumo, isOcup, valorAgua, valorCeb, valorIptu, total } = calc[num];
+    const tag = isOcup ? '<span class="tag ocup">Ocupada</span>' : '<span class="tag vazia">Vazia</span>';
+    const nome = s.nome || '—';
+    const classVazia = isOcup ? '' : 'class="empty"';
+    const disableIfNotOcup = isOcup ? '' : 'disabled';
+    
+    const iptuChk = u.iptu_cobrar !== false;
+    const aguaChk = u.agua_cobrar !== false;
+    const cebChk  = u.ceb_cobrar  !== false;
+    const extChk  = u.extra_cobrar!== false;
+
+    // Cadastro
+    hCad += `<tr><td><b>${num}</b></td><td>${tag}</td><td>${nome}</td><td class="num">${brl(s.loc)}</td><td class="num">${brl(s.iptu)}</td><td class="num">${s.leit}</td><td><button class="btn sm" onclick="openSala('${num}')">Editar</button> <button class="btn sm" style="color:var(--danger)" onclick="excluirSala('${num}')">×</button></td></tr>`;
+
+    // IPTU
+    hIptu += `<tr ${classVazia}><td><b>${num}</b></td><td>${nome}</td><td class="num">${brl(s.iptu)}</td><td class="num">${brl(s.iptu/12)}</td><td class="center"><input type="checkbox" ${iptuChk?'checked':''} onchange="salvarUnit('${num}', 'iptu_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
+
+    // Água
+    hAgua += `<tr ${classVazia}><td><b>${num}</b></td><td>${nome}</td><td class="num">${lAnt}</td><td class="num"><input type="number" class="editable num" value="${u.agua_leitura!==undefined?u.agua_leitura:''}" onchange="salvarUnit('${num}', 'agua_leitura', this.value)" ${disableIfNotOcup}></td><td class="num"><b>${consumo}</b></td><td class="num">R$ ${brl(aguaChk ? valorAgua : 0)}</td><td class="center"><input type="checkbox" ${aguaChk?'checked':''} onchange="salvarUnit('${num}', 'agua_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
+
+    // Energia
+    let cebBase = isOcup && ocupadas > 0 ? mDados.globais.ceb / ocupadas : 0;
+    hCeb += `<tr ${classVazia}><td><b>${num}</b></td><td>${nome}</td><td>${tag}</td><td class="num">R$ ${brl(cebChk ? cebBase : 0)}</td><td class="center"><input type="checkbox" ${cebChk?'checked':''} onchange="salvarUnit('${num}', 'ceb_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
+
+    // Extras
+    hExt += `<tr ${classVazia}><td><b>${num}</b></td><td>${nome}</td><td><input type="text" class="editable" style="width:100%;text-align:left;" value="${u.extra_desc||''}" placeholder="Ex: Manutenção" onchange="salvarUnit('${num}', 'extra_desc', this.value)" ${disableIfNotOcup}></td><td class="num"><input type="text" class="editable num" value="${brl(u.extra_valor)}" onchange="salvarUnit('${num}', 'extra_valor', this.value)" ${disableIfNotOcup}></td><td class="center"><input type="checkbox" ${extChk?'checked':''} onchange="salvarUnit('${num}', 'extra_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
+
+    // Resumo
+    if(isOcup) { 
+      tLoc += s.loc; tIptu += valorIptu; tAgua += valorAgua; tCeb += valorCeb; 
+      let valorExtra = extChk ? parseNum(u.extra_valor) : 0;
+      tExt += valorExtra; tGeral += total; 
+    }
+    
+    let btnPago = isOcup ? `<button class="btn sm ${u.pago?'primary':''}" onclick="togglePago('${num}')">${u.pago?'✔ Pago':'Pendente'}</button>` : '—';
+    hRes += `<tr ${classVazia}><td><b>${num}</b></td><td>${nome}</td><td class="num">${brl(s.loc)}</td><td class="num">${brl(valorIptu)}</td><td class="num">${brl(valorAgua)}</td><td class="num">${brl(valorCeb)}</td><td class="num">${brl(extChk ? u.extra_valor : 0)}</td><td class="num"><b>R$ ${brl(total)}</b></td><td class="center">${btnPago}</td></tr>`;
+  });
+
+  if(chaves.length===0){
+    const msg = '<tr><td colspan="10" style="text-align:center;color:var(--muted)">Nenhuma sala cadastrada.</td></tr>';
+    hCad=msg; hIptu=msg; hAgua=msg; hCeb=msg; hExt=msg; hRes=msg;
+  }
+
+  document.querySelector('#tblSalas tbody').innerHTML = hCad;
+  document.querySelector('#tblIptu tbody').innerHTML = hIptu;
+  document.querySelector('#tblAgua tbody').innerHTML = hAgua;
+  document.querySelector('#tblEnergia tbody').innerHTML = hCeb;
+  document.querySelector('#tblExtra tbody').innerHTML = hExt;
+  document.querySelector('#tblResumo tbody').innerHTML = hRes;
+
+  document.querySelector('#tblAgua tfoot').innerHTML = `<tr class="total"><td colspan="4">TOTAIS DA COMPETÊNCIA</td><td class="num">${totConsumo}</td><td class="num">R$ ${brl(mDados.globais.caesb)}</td><td></td></tr>`;
+  document.querySelector('#tblResumo tfoot').innerHTML = `<tr class="total"><td colspan="2">TOTAIS (SOMENTE OCUPADAS)</td><td class="num">${brl(tLoc)}</td><td class="num">${brl(tIptu)}</td><td class="num">${brl(tAgua)}</td><td class="num">${brl(tCeb)}</td><td class="num">${brl(tExt)}</td><td class="num">R$ ${brl(tGeral)}</td><td></td></tr>`;
+}
+
+carregarDaNuvem();
+</script>
+</body>
+</html>
