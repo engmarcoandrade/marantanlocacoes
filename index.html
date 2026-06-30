@@ -3,76 +3,76 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Controle de Locações — Integrado ao Drive (V5)</title>
+<title>Controle de Locações — Integrado ao Drive (V6)</title>
 <style>
   :root{
-    /* Nova Paleta: Tons de Azul Moderno e Clean */
-    --ink: #0f172a;        
-    --paper: #f0f4f8;      
-    --card: #ffffff;       
-    --line: #cbd5e1;       
-    
-    --brand: #1e3a8a;      
-    --brand2: #2563eb;     
-    --accent: #f59e0b;     
-    
-    --muted: #64748b;      
-    --danger: #e11d48;     
-    --ok: #16a34a;         
-    
+    --ink: #0f172a;
+    --paper: #f0f4f8;
+    --card: #ffffff;
+    --line: #cbd5e1;
+
+    --brand: #1e3a8a;
+    --brand2: #2563eb;
+    --accent: #f59e0b;
+
+    --muted: #64748b;
+    --danger: #e11d48;
+    --ok: #16a34a;
+
     --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
-    
-    --mono: "Courier New", Courier, monospace; 
+
+    --mono: "Courier New", Courier, monospace;
     --sans: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
 
   [data-theme="dark"]{
     --ink: #f8fafc;
-    --paper: #0f172a;      
-    --card: #1e293b;       
-    --line: #334155;       
-    
-    --brand: #3b82f6;      
-    --brand2: #60a5fa;     
-    --accent: #fbbf24;     
+    --paper: #0f172a;
+    --card: #1e293b;
+    --line: #334155;
+
+    --brand: #3b82f6;
+    --brand2: #60a5fa;
+    --accent: #fbbf24;
     --muted: #94a3b8;
-    
+
     --shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
   }
 
   *{box-sizing:border-box}
   body{margin:0;font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:14px;transition: opacity 0.3s, background-color 0.3s;}
-  
+
   header{background:var(--brand);color:#fff;padding:16px 22px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow: 0 2px 10px rgba(0,0,0,0.15);}
   header h1{font-size:18px;margin:0;font-weight:600;letter-spacing:0.5px;}
   header .spacer{flex:1}
-  
+
   .btn{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-family:var(--sans);font-weight:500;transition: all 0.2s;}
   .btn:hover{border-color:var(--brand2); box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
   .btn.primary{background:var(--brand2);color:#fff;border-color:var(--brand2)}
-  .btn.primary:hover{background:#1d4ed8; border-color:#1d4ed8;} 
-  
+  .btn.primary:hover{background:#1d4ed8; border-color:#1d4ed8;}
+
   .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.3)}
   .btn.ghost:hover{background:rgba(255,255,255,.15); border-color:rgba(255,255,255,.6)}
   .btn.sm{padding:5px 10px;font-size:12px}
-  
+
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+
   .month-nav{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.15);padding:5px 10px;border-radius:8px;}
   .month-nav .mlabel{font-family:var(--mono);font-size:14.5px;font-weight:bold;min-width:100px;text-align:center;letter-spacing: 1px;}
-  
+
   .tabs{display:flex;gap:4px;padding:0 22px;background:var(--brand);overflow-x:auto;}
   .tab{padding:12px 18px;color:#fff;opacity:.65;cursor:pointer;border-bottom:3px solid transparent;font-weight:600;font-size:13px;white-space:nowrap;transition: all 0.2s;text-transform:uppercase;letter-spacing:0.5px;}
   .tab:hover{opacity: 1;}
   .tab.active{opacity:1;border-bottom-color:var(--accent);color:var(--card);}
-  
+
   main{padding:24px;max-width:1300px;margin:0 auto;}
   .panel{display:none;animation:fade .25s ease}
   .panel.active{display:block}
   @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
-  
-  /* Alerta Global de Reajuste */
+
   #alertReajuste {
     display: none;
-    background: #f59e0b; /* Laranja/Ambar */
+    background: #f59e0b;
     color: #fff;
     padding: 12px 20px;
     border-radius: 8px;
@@ -85,17 +85,30 @@
   }
   [data-theme="dark"] #alertReajuste { background: #d97706; border-color: #92400e; }
 
+  #alertConfig {
+    display:none;
+    background:#1e293b;
+    color:#fff;
+    padding:12px 20px;
+    border-radius:8px;
+    margin-bottom:20px;
+    font-size:14px;
+    border-left:5px solid var(--danger);
+  }
+  #alertConfig a, #alertConfig button.linklike{color:#93c5fd;text-decoration:underline;cursor:pointer;background:none;border:none;font-size:14px;padding:0;font-family:inherit;}
+
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:22px;margin-bottom:20px;}
   .card h2{margin:0 0 6px;font-size:17px;color:var(--brand);font-weight:600;}
   .card .hint{color:var(--muted);font-size:13px;margin:0 0 18px;line-height:1.4;}
-  
+
   .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
   .fld{display:flex;flex-direction:column;gap:5px;}
   .fld label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;}
   .fld input,.fld select{padding:9px 12px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13.5px;transition: border-color 0.2s;}
   .fld input:focus,.fld select:focus{border-color:var(--brand2);outline:none;background:var(--card);}
   .fld input.num{font-family:var(--mono);text-align:right;}
-  
+  .fld input.mono{font-family:var(--mono);}
+
   table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px;}
   th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;}
   th{font-size:11.5px;text-transform:uppercase;color:var(--muted);background:var(--paper);font-weight:600;letter-spacing:0.3px;}
@@ -103,17 +116,27 @@
   td.center,th.center{text-align:center;}
   tr.empty td{color:var(--muted);font-style:italic;}
   tr.total td{font-weight:bold;background:var(--paper);border-top:2px solid var(--brand);font-size:13.5px;}
-  
-  /* ESTILOS DE DESTAQUE PARA REAJUSTE PENDENTE */
+  tr.hidden-by-search{display:none;}
+
   tr.needs-reajuste td {
-    background-color: #fef3c7; /* Amarelo claro */
-    color: #92400e; /* Texto escuro quente */
+    background-color: #fef3c7;
+    color: #92400e;
     border-bottom: 1px solid #fde68a;
   }
   [data-theme="dark"] tr.needs-reajuste td {
     background-color: rgba(245, 158, 11, 0.12);
     color: #fcd34d;
     border-bottom: 1px solid rgba(245, 158, 11, 0.3);
+  }
+  tr.reajuste-proximo td {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border-bottom: 1px solid #bfdbfe;
+  }
+  [data-theme="dark"] tr.reajuste-proximo td {
+    background-color: rgba(59, 130, 246, 0.12);
+    color: #93c5fd;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.3);
   }
   .badge-reajuste {
     display: inline-block;
@@ -127,34 +150,65 @@
     text-transform: uppercase;
     vertical-align: middle;
   }
+  .badge-reajuste-proximo {
+    display: inline-block;
+    background: var(--brand2);
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    margin-left: 8px;
+    font-weight: bold;
+    text-transform: uppercase;
+    vertical-align: middle;
+  }
+  #alertReajuste.aviso-proximo {
+    background: var(--brand2);
+    border-left-color: #1d4ed8;
+  }
+  [data-theme="dark"] #alertReajuste.aviso-proximo { background: #2563eb; border-color: #1d4ed8; }
 
   .tag{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;}
-  .tag.ocup{background:#dbeafe;color:#1e40af; border: 1px solid #bfdbfe;} 
-  .tag.vazia{background:#f1f5f9;color:#64748b; border: 1px solid #e2e8f0;} 
+  .tag.ocup{background:#dbeafe;color:#1e40af; border: 1px solid #bfdbfe;}
+  .tag.vazia{background:#f1f5f9;color:#64748b; border: 1px solid #e2e8f0;}
   [data-theme="dark"] .tag.ocup{background:#1e3a8a; color:#bfdbfe; border-color:#1e40af;}
   [data-theme="dark"] .tag.vazia{background:#334155; color:#94a3b8; border-color:#475569;}
-  
+
   .editable{background:transparent;border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:95px;font-family:var(--mono);text-align:right;color:var(--ink);font-size:13px;transition: all 0.2s;}
   .editable:focus{border-color:var(--brand2);background:var(--card);outline:none;box-shadow: 0 0 0 2px rgba(37,99,235,0.2);}
-  
+
   .global-input{background:var(--paper);padding:16px;border-radius:8px;border:1px dashed var(--brand2);margin-bottom:18px;display:inline-block;}
   .global-input label{font-weight:600;margin-right:10px;color:var(--brand);}
-  
+
+  .search-bar{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+  .search-bar input{flex:1;max-width:320px;padding:9px 12px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);font-size:13.5px;}
+  .search-bar input:focus{border-color:var(--brand2);outline:none;background:var(--card);}
+  .search-bar .count{color:var(--muted);font-size:12px;}
+
   dialog{border:none;border-radius:12px;padding:0;box-shadow:0 30px 80px -20px rgba(0,0,0,.6);max-width:560px;width:92%;background:var(--card);}
   dialog::backdrop{background:rgba(15,23,42,.6); backdrop-filter: blur(2px);}
   .dlg-head{background:var(--brand);color:#fff;padding:16px 20px;font-weight:bold;font-size:16px;}
   .dlg-body{padding:22px;color:var(--ink)}
   .dlg-foot{padding:16px 20px;background:var(--paper);display:flex;justify-content:flex-end;gap:10px;border-top:1px solid var(--line);border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  
+
   #statusNuvem { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.85); margin-left: 10px; background: rgba(0,0,0,0.2); padding: 4px 10px; border-radius: 20px;}
+  #statusNuvem.unsaved { background: rgba(245,158,11,0.35); }
+  #statusNuvem.err { background: rgba(225,29,72,0.4); }
+  #statusNuvem.ok { background: rgba(22,163,74,0.35); }
+
+  .cfg-status-line{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;}
+  .cfg-dot{width:9px;height:9px;border-radius:50%;background:var(--muted);display:inline-block;}
+  .cfg-dot.ok{background:var(--ok);}
+  .cfg-dot.err{background:var(--danger);}
+  .cfg-dot.pending{background:var(--accent);}
 </style>
 </head>
 <body>
 
 <header>
   <div>
-    <h1>Locações V5</h1>
+    <h1>Locações V6</h1>
   </div>
   <div class="month-nav">
     <button class="btn sm ghost" onclick="mudarMes(-1)">‹</button>
@@ -162,7 +216,8 @@
     <button class="btn sm ghost" onclick="mudarMes(1)">›</button>
   </div>
   <div class="spacer"></div>
-  <span id="statusNuvem">Carregando nuvem...</span>
+  <span id="statusNuvem">Carregando...</span>
+  <button class="btn sm ghost" onclick="openConfig()" title="Configurar conexão com a Planilha">⚙️ Conexão</button>
   <button class="btn sm ghost" onclick="exportarExcel()">📊 Excel</button>
   <button class="btn sm ghost" onclick="fazerBackup()">💾 Backup Local</button>
   <button class="btn sm ghost" onclick="document.getElementById('fileRestore').click()">📂 Restaurar</button>
@@ -181,7 +236,15 @@
 </div>
 
 <main>
+  <div id="alertConfig">
+    ⚠️ Nenhuma planilha conectada ainda. <button class="linklike" onclick="openConfig()">Clique aqui para colar a URL do seu Apps Script</button> e começar a sincronizar.
+  </div>
   <div id="alertReajuste"></div>
+
+  <div class="search-bar">
+    <input type="text" id="searchBox" placeholder="🔎 Buscar por nº da sala ou nome do inquilino..." oninput="aplicarFiltro()">
+    <span class="count" id="searchCount"></span>
+  </div>
 
   <section class="panel active" id="panel-cad">
     <div class="card">
@@ -221,6 +284,23 @@
         <label>Valor Total da Fatura (R$):</label>
         <input type="text" class="editable num" id="inpCaesbTotal" onchange="salvarGlobal('caesb', this.value)">
       </div>
+
+      <div class="global-input" style="display:flex;align-items:center;gap:14px;">
+        <label style="margin-right:0;">Modo de Rateio:</label>
+        <select id="selModoRateioAgua" onchange="salvarModoRateioAgua(this.value)" style="padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);font-family:var(--sans);font-size:13.5px;">
+          <option value="consumo">Por Consumo (leitura individual)</option>
+          <option value="linear">Linear (divisão igualitária)</option>
+        </select>
+      </div>
+
+      <div id="boxLeituraColetiva" class="global-input" style="display:none;">
+        <label>Leitura Coletiva do Hidrômetro Geral (mês atual):</label>
+        <input type="text" class="editable num" id="inpLeituraColetiva" onchange="salvarLeituraColetiva(this.value)">
+        <div id="infoLeituraColetiva" style="margin-top:10px;font-size:13px;color:var(--muted);"></div>
+      </div>
+
+      <p class="hint" id="hintModoRateio" style="margin-top:0;"></p>
+
       <div style="overflow-x:auto;">
         <table id="tblAgua">
           <thead><tr>
@@ -267,7 +347,7 @@
   <section class="panel" id="panel-corretagem">
     <div class="card">
       <h2>Pagamento de Corretagem</h2>
-      <p class="hint">A corretagem é calculada <strong>apenas sobre o valor bruto da locação</strong> e contabilizada no total apenas se o aluguel estiver pago.</p>
+      <p class="hint">A corretagem é calculada <strong>apenas sobre o valor bruto da locação</strong> e contabilizada no total apenas se o aluguel estiver marcado como pago.</p>
       <div class="global-input">
         <label>Taxa Padrão de Corretagem (%):</label>
         <input type="text" class="editable num" id="inpCorretagem" onchange="salvarGlobal('corretagem', this.value)">
@@ -309,12 +389,12 @@
     <div class="grid2">
       <div class="fld"><label>Número da Sala</label><input id="sNum" placeholder="Ex: 101"></div>
       <div class="fld"><label>Status</label><select id="sStatus"><option value="ocup">Ocupada</option><option value="vazia">Vazia</option></select></div>
-      
+
       <div class="fld" style="grid-column:1/3"><label>Inquilino</label><input id="sNome" placeholder="Nome completo"></div>
-      
+
       <div class="fld"><label>Início do Contrato</label><input type="month" id="sInicio" title="Mês e ano que o contrato iniciou"></div>
       <div class="fld"><label>Último Reajuste (Opcional)</label><input type="month" id="sReajuste" title="Mês e ano que o último reajuste foi aplicado. Se vazio, usa o Início do Contrato."></div>
-      
+
       <div class="fld"><label>Locação Mensal (R$)</label><input class="num" id="sLoc" placeholder="800,00"></div>
       <div class="fld"><label>IPTU ANUAL (R$)</label><input class="num" id="sIptu" placeholder="536,00"></div>
       <div class="fld" style="grid-column:1/3"><label>Leitura Água INICIAL</label><input class="num" id="sLeit" placeholder="0"></div>
@@ -326,36 +406,332 @@
   </div>
 </dialog>
 
+<dialog id="dlgConfig">
+  <div class="dlg-head">Conexão com a Planilha (Google Apps Script)</div>
+  <div class="dlg-body">
+    <p class="hint" style="margin-top:0;">
+      <b>Passo 1:</b> copie o script abaixo e cole no Apps Script da sua planilha (Extensões &gt; Apps Script), substituindo todo o conteúdo do arquivo Code.gs. Implante como App da Web ("Qualquer pessoa" tem acesso) e copie a URL gerada.<br>
+      <b>Passo 2:</b> cole essa URL no campo "URL do Apps Script" logo abaixo e clique em "Salvar e Recarregar Dados".
+    </p>
+
+    <div class="fld" style="width:100%;margin-bottom:16px;">
+      <label>Script para colar no Apps Script (Code.gs)</label>
+      <textarea id="cfgScript" class="mono" rows="10" readonly style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);font-size:11.5px;resize:vertical;"></textarea>
+      <button class="btn sm" style="align-self:flex-start;margin-top:6px;" onclick="copiarScript()">📋 Copiar Script</button>
+    </div>
+
+    <div class="fld" style="width:100%;">
+      <label>URL do Apps Script (/exec)</label>
+      <input id="cfgApiUrl" class="mono" style="width:100%;" placeholder="https://script.google.com/macros/s/AKfycby.../exec">
+    </div>
+    <div class="cfg-status-line" id="cfgStatusLine" style="display:none;">
+      <span class="cfg-dot" id="cfgDot"></span>
+      <span id="cfgStatusText"></span>
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn" onclick="dlgConfig.close()">Fechar</button>
+    <button class="btn" onclick="testarConexao()">🔌 Testar Conexão</button>
+    <button class="btn primary" onclick="salvarConfig()">Salvar e Recarregar Dados</button>
+  </div>
+</dialog>
+
 <script>
-// --- FUNÇÕES UTILITÁRIAS ---
+// ============================================================
+// UTILITÁRIOS
+// ============================================================
 function brl(n){ return (Number(n)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function parseNum(s){ if(typeof s==='number')return s; return Number(String(s||'').replace(/\./g,'').replace(',','.'))||0; }
-function formatMonth(m){ const[y,mo]=m.split('-'); return `${mo}/${y}`; }
+function parseNum(s){
+  if (s === '' || s === null || s === undefined) return 0;
+  if (typeof s === 'number') return s;
+  return Number(String(s).replace(/\./g,'').replace(',','.')) || 0;
+}
+function formatMonth(m){ if(!m) return '--/----'; const[y,mo]=m.split('-'); return `${mo}/${y}`; }
 
-// --- INTEGRAÇÃO COM GOOGLE DRIVE ---
-const API_URL = 'https://script.google.com/macros/s/AKfycby6mVtFMVYDZskowE-5wCTgPXkBLpgZq8NZXB0rAzswMt2IQitAbSVAKcvcyYOmJVZVVg/exec'; 
+// ============================================================
+// SCRIPT DO APPS SCRIPT (embutido aqui para o usuário copiar e colar no Sheets)
+// ============================================================
+const APPS_SCRIPT_CODE = `const NOME_ABA = 'Dados';
+const CHAVE_LINHA = 'locacoes_v6';
 
+
+function doGet(e) {
+  try {
+    const dados = lerDados();
+    return ContentService
+      .createTextOutput(JSON.stringify(dados))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (erro) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ erro: String(erro) }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+
+function doPost(e) {
+  try {
+    const corpo = JSON.parse(e.postData.contents);
+    salvarDados(corpo);
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: true }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (erro) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: false, erro: String(erro) }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+
+function getAba() {
+  const planilha = SpreadsheetApp.getActiveSpreadsheet();
+  let aba = planilha.getSheetByName(NOME_ABA);
+  if (!aba) {
+    aba = planilha.insertSheet(NOME_ABA);
+    aba.getRange(1, 1, 1, 2).setValues([['chave', 'json']]);
+    aba.setColumnWidth(2, 600);
+  }
+  return aba;
+}
+
+
+function lerDados() {
+  const aba = getAba();
+  const linhas = aba.getDataRange().getValues();
+
+  for (let i = 1; i < linhas.length; i++) {
+    if (linhas[i][0] === CHAVE_LINHA) {
+      const jsonTexto = linhas[i][1];
+      if (jsonTexto) {
+        return JSON.parse(jsonTexto);
+      }
+    }
+  }
+
+  return { salas: {}, meses: {} };
+}
+
+
+function salvarDados(dados) {
+  const trava = LockService.getScriptLock();
+  trava.waitLock(10000);
+
+  try {
+    const aba = getAba();
+    const linhas = aba.getDataRange().getValues();
+    const jsonTexto = JSON.stringify({
+      salas: dados.salas || {},
+      meses: dados.meses || {}
+    });
+
+    let linhaEncontrada = -1;
+    for (let i = 1; i < linhas.length; i++) {
+      if (linhas[i][0] === CHAVE_LINHA) {
+        linhaEncontrada = i + 1;
+        break;
+      }
+    }
+
+    if (linhaEncontrada === -1) {
+      const novaLinha = aba.getLastRow() + 1;
+      aba.getRange(novaLinha, 1, 1, 2).setValues([[CHAVE_LINHA, jsonTexto]]);
+    } else {
+      aba.getRange(linhaEncontrada, 2).setValue(jsonTexto);
+    }
+
+    aba.getRange(1, 4).setValue('Última atualização:');
+    aba.getRange(1, 5).setValue(new Date());
+
+  } finally {
+    trava.releaseLock();
+  }
+}
+`;
+
+// ============================================================
+// CONFIGURAÇÃO DA CONEXÃO (URL do Apps Script editável pelo usuário)
+// ============================================================
+const CONFIG_KEY = 'loc_v6_api_url';
+
+function getApiUrl(){
+  return (localStorage.getItem(CONFIG_KEY) || '').trim();
+}
+
+function openConfig(){
+  document.getElementById('cfgApiUrl').value = getApiUrl();
+  document.getElementById('cfgScript').value = APPS_SCRIPT_CODE;
+  document.getElementById('cfgStatusLine').style.display = 'none';
+  dlgConfig.showModal();
+}
+
+function copiarScript(){
+  const ta = document.getElementById('cfgScript');
+  ta.select();
+  ta.setSelectionRange(0, 999999);
+  navigator.clipboard.writeText(APPS_SCRIPT_CODE).then(() => {
+    const btn = event.target;
+    const textoOriginal = btn.textContent;
+    btn.textContent = '✔ Copiado!';
+    setTimeout(() => { btn.textContent = textoOriginal; }, 1800);
+  }).catch(() => {
+    document.execCommand('copy');
+  });
+}
+
+function setCfgStatus(state, text){
+  const line = document.getElementById('cfgStatusLine');
+  const dot = document.getElementById('cfgDot');
+  const txt = document.getElementById('cfgStatusText');
+  line.style.display = 'flex';
+  dot.className = 'cfg-dot ' + state;
+  txt.textContent = text;
+}
+
+// Valida o formato da URL e aponta o problema mais provável antes mesmo de testar
+function validarFormatoUrl(url){
+  if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(url)){
+    if(url.includes('/dev')){
+      return 'A URL termina em "/dev" — essa é a versão de teste, só funciona pra você logado. Use "Implantar > Gerenciar implantações" e copie a URL que termina em "/exec".';
+    }
+    if(!url.startsWith('https://script.google.com/')){
+      return 'Isso não parece uma URL do Apps Script. Ela deve começar com "https://script.google.com/macros/s/..."';
+    }
+    if(!url.endsWith('/exec')){
+      return 'A URL deve terminar exatamente em "/exec". Confira se não sobrou nenhum texto extra ao copiar.';
+    }
+  }
+  return null;
+}
+
+async function testarConexao(){
+  const url = document.getElementById('cfgApiUrl').value.trim();
+  if(!url){ setCfgStatus('err', 'Cole uma URL antes de testar.'); return; }
+
+  const erroFormato = validarFormatoUrl(url);
+  if(erroFormato){ setCfgStatus('err', erroFormato); return; }
+
+  setCfgStatus('pending', 'Testando conexão...');
+  try {
+    const resp = await fetch(url, { redirect: 'follow' });
+
+    if (resp.status === 401 || resp.status === 403) {
+      setCfgStatus('err', `A planilha recusou o acesso (HTTP ${resp.status}). No Apps Script, vá em "Implantar > Gerenciar implantações", edite e confirme que "Quem pode acessar" está como "Qualquer pessoa" — depois implante de novo.`);
+      return;
+    }
+    if (!resp.ok) {
+      setCfgStatus('err', `A planilha respondeu com erro HTTP ${resp.status}. Tente reimplantar o script (Nova implantação) e colar a URL nova.`);
+      return;
+    }
+
+    const texto = await resp.text();
+    let dados;
+    try {
+      dados = JSON.parse(texto);
+    } catch(e){
+      if(texto.includes('<html') || texto.includes('accounts.google.com') || texto.includes('Sign in')){
+        setCfgStatus('err', 'O Google pediu login em vez de devolver dados — isso costuma acontecer quando "Quem pode acessar" não está em "Qualquer pessoa", ou a implantação ainda não foi autorizada. Reimplante o script e autorize as permissões pedidas.');
+      } else {
+        setCfgStatus('err', 'A URL respondeu, mas não em formato JSON válido. Confira se colou todo o código do Code.gs e se implantou como "App da Web".');
+      }
+      return;
+    }
+
+    if (dados && dados.erro) {
+      setCfgStatus('err', `O script rodou, mas retornou um erro interno: ${dados.erro}`);
+      return;
+    }
+
+    if (dados && typeof dados === 'object') {
+      const nSalas = dados.salas ? Object.keys(dados.salas).length : 0;
+      setCfgStatus('ok', `Conexão OK! ${nSalas} sala(s) encontrada(s) na planilha.`);
+    } else {
+      setCfgStatus('err', 'Resposta inesperada da planilha.');
+    }
+  } catch(erro){
+    setCfgStatus('err', 'Não foi possível conectar (falha de rede ou CORS). Confira sua internet e se a URL foi copiada corretamente, sem espaços extras.');
+    console.error(erro);
+  }
+}
+
+function salvarConfig(){
+  const url = document.getElementById('cfgApiUrl').value.trim();
+
+  if(!url){
+    if(!confirm('Nenhuma URL informada. Deseja desconectar e trabalhar apenas localmente (sem sincronizar com a planilha)?')) return;
+    localStorage.removeItem(CONFIG_KEY);
+  } else {
+    localStorage.setItem(CONFIG_KEY, url);
+  }
+  dlgConfig.close();
+  carregarDaNuvem();
+}
+
+function atualizarAlertConfig(){
+  document.getElementById('alertConfig').style.display = getApiUrl() ? 'none' : 'block';
+}
+
+// ============================================================
+// ESTADO
+// ============================================================
 let salas = {};
 let meses = {};
 let curMonth = localStorage.getItem('loc_v3_cur') || new Date().toISOString().slice(0,7);
 let editKey = null;
+let temAlteracaoPendente = false;
+let filtroBusca = '';
+
+function setStatus(texto, classe){
+  const el = document.getElementById('statusNuvem');
+  el.textContent = texto;
+  el.className = classe || '';
+}
 
 async function carregarDaNuvem() {
-  document.body.style.opacity = '0.5'; 
-  const statusEl = document.getElementById('statusNuvem');
-  statusEl.innerText = "Sincronizando...";
+  atualizarAlertConfig();
+  const url = getApiUrl();
+  if(!url){
+    setStatus('Sem planilha conectada', 'err');
+    salas = {}; meses = {};
+    renderAll();
+    return;
+  }
+
+  document.body.style.opacity = '0.5';
+  setStatus('Sincronizando...', '');
   try {
-    const resposta = await fetch(API_URL);
-    const dados = await resposta.json();
-    
-    if(dados.salas) salas = dados.salas;
-    if(dados.meses) meses = dados.meses;
-    
-    statusEl.innerText = "✔ Nuvem Conectada";
+    const resposta = await fetch(url, { redirect: 'follow' });
+
+    if (resposta.status === 401 || resposta.status === 403) {
+      throw new Error(`A planilha recusou o acesso (HTTP ${resposta.status}). Abra "⚙️ Conexão" e confira se a implantação está com "Quem pode acessar" = "Qualquer pessoa".`);
+    }
+    if (!resposta.ok) {
+      throw new Error(`A planilha respondeu com erro HTTP ${resposta.status}. Tente reimplantar o script e atualizar a URL em "⚙️ Conexão".`);
+    }
+
+    const texto = await resposta.text();
+    let dados;
+    try {
+      dados = JSON.parse(texto);
+    } catch(e){
+      if(texto.includes('<html') || texto.includes('accounts.google.com') || texto.includes('Sign in')){
+        throw new Error('O Google pediu login em vez de devolver dados. Abra "⚙️ Conexão", clique em "Testar Conexão" para mais detalhes, e confira a permissão de acesso da implantação.');
+      }
+      throw new Error('Resposta da planilha não é um JSON válido. Verifique se a URL termina em /exec e se o script está publicado corretamente.');
+    }
+
+    if (dados && dados.erro) {
+      throw new Error('O script rodou, mas retornou um erro interno: ' + dados.erro);
+    }
+
+    salas = dados.salas || {};
+    meses = dados.meses || {};
+
+    setStatus('✔ Nuvem conectada', 'ok');
     renderAll();
   } catch (erro) {
-    statusEl.innerText = "❌ Erro na Conexão";
-    alert("Erro ao conectar com a Planilha. O sistema iniciará com dados vazios até que a conexão volte.");
+    setStatus('❌ Erro na conexão', 'err');
+    alert('Erro ao conectar com a planilha:\n\n' + erro.message + '\n\nO sistema seguirá com os dados que estavam carregados localmente (se houver).');
     console.error(erro);
     renderAll();
   } finally {
@@ -365,25 +741,40 @@ async function carregarDaNuvem() {
 
 let timerSalvamento;
 function salvarDados() {
-  renderAll(); 
-  const statusEl = document.getElementById('statusNuvem');
-  statusEl.innerText = "Salvando...";
-  
+  renderAll();
+  temAlteracaoPendente = true;
+  setStatus('Alterações pendentes...', 'unsaved');
+
+  const url = getApiUrl();
+  if(!url){
+    setStatus('⚠ Sem planilha conectada (não salvo)', 'err');
+    return;
+  }
+
   clearTimeout(timerSalvamento);
   timerSalvamento = setTimeout(async () => {
     try {
-      await fetch(API_URL, {
+      await fetch(url, {
         method: 'POST',
         body: JSON.stringify({ salas: salas, meses: meses }),
         headers: { 'Content-Type': 'text/plain;charset=utf-8' }
       });
-      statusEl.innerText = "✔ Salvo com Sucesso";
+      temAlteracaoPendente = false;
+      setStatus('✔ Salvo com sucesso', 'ok');
     } catch (erro) {
-      statusEl.innerText = "❌ Erro ao salvar";
+      setStatus('❌ Erro ao salvar', 'err');
       console.error("Erro ao salvar:", erro);
     }
-  }, 1500); 
+  }, 1500);
 }
+
+// Aviso ao tentar sair com alterações ainda não persistidas na nuvem
+window.addEventListener('beforeunload', function(e){
+  if(temAlteracaoPendente){
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
 
 function restaurarBackup(event){
   const file = event.target.files[0];
@@ -393,16 +784,23 @@ function restaurarBackup(event){
     try {
       const data = JSON.parse(e.target.result);
       if(data.salas && data.meses) {
+        const nSalas = Object.keys(data.salas).length;
+        const nMeses = Object.keys(data.meses).length;
+        if(!confirm(`Este backup contém ${nSalas} sala(s) e dados de ${nMeses} mês(es).\n\nIsso vai SUBSTITUIR todos os dados atuais (locais e na planilha conectada). Deseja continuar?`)) {
+          event.target.value = '';
+          return;
+        }
         salas = data.salas;
         meses = data.meses;
         salvarDados();
-        alert('Backup local restaurado e sincronizado com o Drive com sucesso!');
+        alert('Backup restaurado e sincronização iniciada.');
       } else {
         alert('O arquivo selecionado não tem o formato correto de backup.');
       }
     } catch (err) {
       alert('Erro ao ler o arquivo de backup.');
     }
+    event.target.value = '';
   };
   reader.readAsText(file);
 }
@@ -418,7 +816,7 @@ function fazerBackup(){
 function exportarExcel(){
   const { calc } = calcularCompetencia();
   let csv = "Sala;Inquilino;Locacao;IPTU;Agua;Energia;Extras;Total;Status_Pagamento;Corretagem\n";
-  
+
   Object.keys(calc).sort((a,b)=>a.localeCompare(b, undefined, {numeric:true})).forEach(num => {
     const c = calc[num];
     if (c.isOcup) {
@@ -452,7 +850,7 @@ function mudarMes(dir){
   curMonth = `${y}-${String(m).padStart(2,'0')}`;
   localStorage.setItem('loc_v3_cur', curMonth);
   garantirMes(curMonth);
-  renderAll(); 
+  renderAll();
 }
 function mesAnterior(m){
   let [y, mo] = m.split('-').map(Number);
@@ -463,13 +861,23 @@ function mesAnterior(m){
 function garantirMes(m){
   let alterouEstrutura = false;
   if(!meses[m]){
-    meses[m] = { globais: { caesb: 0, ceb: 0, corretagem: 10 }, unidades: {} };
+    meses[m] = { globais: { caesb: 0, ceb: 0, corretagem: 10, modoRateioAgua: 'consumo', leituraColetiva: '' }, unidades: {} };
     alterouEstrutura = true;
-  } else if (meses[m].globais.corretagem === undefined) {
-    meses[m].globais.corretagem = 10; 
-    alterouEstrutura = true;
+  } else {
+    if (meses[m].globais.corretagem === undefined) {
+      meses[m].globais.corretagem = 10;
+      alterouEstrutura = true;
+    }
+    if (meses[m].globais.modoRateioAgua === undefined) {
+      meses[m].globais.modoRateioAgua = 'consumo';
+      alterouEstrutura = true;
+    }
+    if (meses[m].globais.leituraColetiva === undefined) {
+      meses[m].globais.leituraColetiva = '';
+      alterouEstrutura = true;
+    }
   }
-  
+
   Object.keys(salas).forEach(num => {
     if(!meses[m].unidades[num]){
       meses[m].unidades[num] = {
@@ -487,194 +895,320 @@ function openSala(k){
   const s = k ? salas[k] : {status:'ocup', leit:0, loc:0, iptu:0, dataInicio:'', ultimoReajuste:''};
   sNum.value = k || ''; sNum.disabled = !!k;
   sStatus.value = s.status; sNome.value = s.nome || '';
-  sLoc.value = brl(s.loc); sIptu.value = brl(s.iptu); sLeit.value = s.leit;
-  
-  // Novos campos de reajuste
+  sLoc.value = brl(s.loc); sIptu.value = brl(s.iptu); sLeit.value = s.leit || 0;
+
   document.getElementById('sInicio').value = s.dataInicio || '';
   document.getElementById('sReajuste').value = s.ultimoReajuste || '';
-  
+
   dlgSala.showModal();
 }
 
 function salvarNovaSala(){
   const k = sNum.value.trim();
   if(!k) return alert('Informe a sala.');
+  if(!editKey && salas[k]) return alert(`Já existe uma sala cadastrada com o número "${k}".`);
+
+  const leituraInicial = parseNum(sLeit.value);
+
   salas[k] = {
     status: sStatus.value,
     nome: sStatus.value === 'vazia' ? 'VAZIA' : sNome.value.trim(),
     loc: parseNum(sLoc.value),
     iptu: parseNum(sIptu.value),
-    leit: parseNum(sLeit.value),
+    leit: leituraInicial,
     dataInicio: document.getElementById('sInicio').value,
     ultimoReajuste: document.getElementById('sReajuste').value
   };
+
+  // Sala nova: garante que o mês atual já considere a leitura inicial
+  // como leitura anterior, evitando consumo fantasma no primeiro mês.
+  if(!editKey){
+    garantirMes(curMonth);
+    if(meses[curMonth].unidades[k] && meses[curMonth].unidades[k].agua_leitura === ''){
+      meses[curMonth].unidades[k].agua_leitura = leituraInicial;
+    }
+  }
+
   garantirMes(curMonth);
-  dlgSala.close(); 
+  dlgSala.close();
   salvarDados();
 }
 
 function excluirSala(k){
-  if(confirm(`Excluir sala ${k}?`)){ delete salas[k]; salvarDados(); }
+  if(!confirm(`Excluir sala ${k}?\n\nIsso também removerá todo o histórico de lançamentos mensais (água, energia, extras, pagamentos) dessa sala em todos os meses.`)) return;
+  delete salas[k];
+  // Limpa dados órfãos em todos os meses para não acumular lixo no JSON
+  Object.keys(meses).forEach(m => {
+    if(meses[m].unidades && meses[m].unidades[k]) delete meses[m].unidades[k];
+  });
+  salvarDados();
 }
 
 function salvarGlobal(tipo, val){ meses[curMonth].globais[tipo] = parseNum(val); salvarDados(); }
-function salvarUnit(num, campo, val){ 
-  if(campo.includes('cobrar')) meses[curMonth].unidades[num][campo] = val; 
+function salvarModoRateioAgua(modo){ meses[curMonth].globais.modoRateioAgua = modo; salvarDados(); }
+function salvarLeituraColetiva(val){ meses[curMonth].globais.leituraColetiva = val === '' ? '' : parseNum(val); salvarDados(); }
+function salvarUnit(num, campo, val){
+  if(campo.includes('cobrar')) meses[curMonth].unidades[num][campo] = val;
   else if(campo==='extra_desc') meses[curMonth].unidades[num][campo] = val;
   else if(campo==='agua_leitura') meses[curMonth].unidades[num][campo] = val === '' ? '' : parseNum(val);
-  else meses[curMonth].unidades[num][campo] = parseNum(val); 
-  salvarDados(); 
+  else meses[curMonth].unidades[num][campo] = parseNum(val);
+  salvarDados();
 }
 function togglePago(num){ meses[curMonth].unidades[num].pago = !meses[curMonth].unidades[num].pago; salvarDados(); }
 
+function marcarReajustado(num){
+  const nome = salas[num] && salas[num].nome ? salas[num].nome : num;
+  if(!confirm(`Marcar a sala ${num} (${nome}) como reajustada agora?\n\nIsso vai definir "${formatMonth(curMonth)}" como o novo "Último Reajuste" no cadastro, reiniciando a contagem de 12 meses a partir deste mês.`)) return;
+  salas[num].ultimoReajuste = curMonth;
+  salvarDados();
+}
+
+// Busca a leitura anterior de forma robusta: percorre meses anteriores
+// até encontrar um valor lançado; se não encontrar nenhum, cai na leitura
+// inicial cadastrada na sala (corrigindo o bug do primeiro mês).
 function getLeituraAnterior(num, m){
-  const prev = mesAnterior(m);
-  if(meses[prev] && meses[prev].unidades[num] && meses[prev].unidades[num].agua_leitura !== '') {
-    return meses[prev].unidades[num].agua_leitura;
+  let cursor = mesAnterior(m);
+  let tentativas = 0;
+  while (tentativas < 36) { // limite de segurança: até 3 anos para trás
+    const mesDados = meses[cursor];
+    if (mesDados && mesDados.unidades && mesDados.unidades[num]) {
+      const leitura = mesDados.unidades[num].agua_leitura;
+      if (leitura !== '' && leitura !== undefined && leitura !== null) {
+        return Number(leitura) || 0;
+      }
+    }
+    cursor = mesAnterior(cursor);
+    tentativas++;
   }
-  return salas[num].leit || 0;
+  return (salas[num] && salas[num].leit) || 0;
 }
 
 function calcularCompetencia(){
-  const mDados = meses[curMonth] || {globais:{caesb:0,ceb:0,corretagem:10}, unidades:{}};
+  const mDados = meses[curMonth] || {globais:{caesb:0,ceb:0,corretagem:10,modoRateioAgua:'consumo',leituraColetiva:''}, unidades:{}};
   let totConsumo = 0;
   let ocupadas = 0;
+  let salasParaRateioAgua = 0; // contagem de salas marcadas para cobrança de água (usado no modo linear)
+  let salasParaRateioCeb = 0;  // contagem de salas ocupadas E marcadas para cobrança de energia
   const taxaCorretagem = mDados.globais.corretagem !== undefined ? mDados.globais.corretagem : 10;
-  
+  const modoRateioAgua = mDados.globais.modoRateioAgua || 'consumo';
+
   const calc = {};
   Object.keys(salas).forEach(num => {
     const s = salas[num];
     const u = mDados.unidades[num] || {};
-    
+
     const lAnt = getLeituraAnterior(num, curMonth);
-    const lAtual = u.agua_leitura !== '' && u.agua_leitura !== undefined ? u.agua_leitura : lAnt;
+    const lAtual = (u.agua_leitura !== '' && u.agua_leitura !== undefined && u.agua_leitura !== null)
+      ? Number(u.agua_leitura) || 0
+      : lAnt;
     const consumo = Math.max(0, lAtual - lAnt);
     totConsumo += consumo;
 
     const isOcup = s.status === 'ocup';
     if(isOcup) ocupadas++;
 
-    // LÓGICA DO REAJUSTE (Aviso se = ou > 12 meses da data base)
+    const aguaChk = u.agua_cobrar !== false;
+    if (aguaChk) salasParaRateioAgua++;
+
+    const cebChk = u.ceb_cobrar !== false;
+    if (isOcup && cebChk) salasParaRateioCeb++;
+
     let needsReajuste = false;
+    let reajustePróximo = false;
+    let diffMesesReajuste = null;
     if (isOcup && s.dataInicio) {
       let dataBase = s.ultimoReajuste || s.dataInicio;
       if (dataBase) {
         let [by, bm] = dataBase.split('-').map(Number);
         let [cy, cm] = curMonth.split('-').map(Number);
         let diffMeses = (cy - by) * 12 + (cm - bm);
+        diffMesesReajuste = diffMeses;
         if (diffMeses >= 12) {
           needsReajuste = true;
+        } else if (diffMeses === 11) {
+          reajustePróximo = true;
         }
       }
     }
 
-    calc[num] = { s, u, lAnt, lAtual, consumo, isOcup, needsReajuste, valorAgua: 0, valorCeb: 0, valorIptu: 0, valorCorretagem: 0 };
+    calc[num] = { s, u, lAnt, lAtual, consumo, isOcup, needsReajuste, reajustePróximo, diffMesesReajuste, valorAgua: 0, valorCeb: 0, valorIptu: 0, valorCorretagem: 0 };
   });
+
+  // Margem de perda: diferença entre a leitura coletiva (hidrômetro geral) e a soma das leituras individuais
+  let perdaConsumo = null;
+  if (modoRateioAgua === 'consumo' && mDados.globais.leituraColetiva !== '' && mDados.globais.leituraColetiva !== undefined) {
+    perdaConsumo = Math.max(0, Number(mDados.globais.leituraColetiva) - totConsumo);
+  }
 
   Object.keys(calc).forEach(num => {
     const c = calc[num];
-    c.valorAgua = c.u.agua_cobrar && totConsumo > 0 ? (c.consumo / totConsumo) * mDados.globais.caesb : 0;
-    c.valorCeb = c.u.ceb_cobrar && c.isOcup && ocupadas > 0 ? (mDados.globais.ceb / ocupadas) : 0;
+    const aguaChk = c.u.agua_cobrar !== false;
+    const cebChk = c.u.ceb_cobrar !== false;
+
+    if (modoRateioAgua === 'linear') {
+      c.valorAgua = aguaChk && salasParaRateioAgua > 0 ? (mDados.globais.caesb / salasParaRateioAgua) : 0;
+    } else {
+      c.valorAgua = aguaChk && totConsumo > 0 ? (c.consumo / totConsumo) * mDados.globais.caesb : 0;
+    }
+
+    c.valorCeb = cebChk && c.isOcup && salasParaRateioCeb > 0 ? (mDados.globais.ceb / salasParaRateioCeb) : 0;
     c.valorIptu = c.u.iptu_cobrar ? (c.s.iptu / 12) : 0;
-    
+
     let valorExtra = c.u.extra_cobrar ? parseNum(c.u.extra_valor) : 0;
     c.total = c.isOcup ? (c.s.loc + c.valorIptu + c.valorAgua + c.valorCeb + valorExtra) : 0;
-    
+
     c.valorCorretagem = c.isOcup ? (c.s.loc * (taxaCorretagem / 100)) : 0;
   });
 
-  return { calc, totConsumo, ocupadas };
+  return { calc, totConsumo, ocupadas, salasParaRateioAgua, salasParaRateioCeb, modoRateioAgua, perdaConsumo };
 }
 
+// ============================================================
+// BUSCA / FILTRO
+// ============================================================
+function aplicarFiltro(){
+  filtroBusca = document.getElementById('searchBox').value.trim().toLowerCase();
+  renderAll();
+}
+
+function passaFiltro(num, nome){
+  if(!filtroBusca) return true;
+  return num.toLowerCase().includes(filtroBusca) || (nome||'').toLowerCase().includes(filtroBusca);
+}
+
+// ============================================================
+// RENDERIZAÇÃO
+// ============================================================
 function renderAll(){
   if(!meses[curMonth]) {
-    meses[curMonth] = { globais: { caesb: 0, ceb: 0, corretagem: 10 }, unidades: {} };
+    meses[curMonth] = { globais: { caesb: 0, ceb: 0, corretagem: 10, modoRateioAgua: 'consumo', leituraColetiva: '' }, unidades: {} };
   }
-  
+
   document.getElementById('mlabel').textContent = formatMonth(curMonth);
   const mDados = meses[curMonth];
-  const { calc, totConsumo, ocupadas } = calcularCompetencia();
-  
+  const { calc, totConsumo, ocupadas, salasParaRateioAgua, salasParaRateioCeb, modoRateioAgua, perdaConsumo } = calcularCompetencia();
+
   document.getElementById('inpCaesbTotal').value = brl(mDados.globais.caesb);
   document.getElementById('inpCebTotal').value = brl(mDados.globais.ceb);
   document.getElementById('inpCorretagem').value = brl(mDados.globais.corretagem !== undefined ? mDados.globais.corretagem : 10);
-  document.getElementById('cebInfo').innerText = `Rateio Atual: Salas Ocupadas: ${ocupadas} | Base rateio de energia por sala: R$ ${brl(ocupadas > 0 ? mDados.globais.ceb / ocupadas : 0)}`;
+  document.getElementById('cebInfo').innerText = `Rateio Atual: Salas Ocupadas: ${ocupadas} | Salas marcadas para cobrança de energia: ${salasParaRateioCeb} | Base rateio de energia por sala: R$ ${brl(salasParaRateioCeb > 0 ? mDados.globais.ceb / salasParaRateioCeb : 0)}`;
+
+  // Controles do modo de rateio de água
+  document.getElementById('selModoRateioAgua').value = modoRateioAgua;
+  const boxColetiva = document.getElementById('boxLeituraColetiva');
+  const hintModo = document.getElementById('hintModoRateio');
+
+  if (modoRateioAgua === 'linear') {
+    boxColetiva.style.display = 'none';
+    hintModo.innerText = `Modo Linear: o valor total da fatura (R$ ${brl(mDados.globais.caesb)}) será dividido igualmente entre as ${salasParaRateioAgua} sala(s) marcada(s) com "Cobrar neste mês?" na tabela abaixo.`;
+  } else {
+    boxColetiva.style.display = 'inline-block';
+    document.getElementById('inpLeituraColetiva').value = mDados.globais.leituraColetiva !== '' && mDados.globais.leituraColetiva !== undefined ? mDados.globais.leituraColetiva : '';
+    hintModo.innerText = `Modo Por Consumo: o valor da fatura é rateado proporcionalmente ao consumo (leitura atual − leitura anterior) de cada sala marcada para cobrança.`;
+
+    const infoColetiva = document.getElementById('infoLeituraColetiva');
+    if (perdaConsumo !== null) {
+      infoColetiva.innerHTML = `Soma das leituras individuais: <b>${totConsumo}</b> &nbsp;|&nbsp; Diferença (perda/área comum): <b>${perdaConsumo}</b>`;
+    } else {
+      infoColetiva.innerText = `Soma das leituras individuais: ${totConsumo}. Lance a leitura coletiva acima para calcular a perda/margem.`;
+    }
+  }
 
   let hCad='', hIptu='', hAgua='', hCeb='', hExt='', hCorr='', hRes='';
   let tLoc=0, tIptu=0, tAgua=0, tCeb=0, tExt=0, tGeral=0, tCorretagemTotal=0;
   let salasComReajustePendente = 0;
+  let salasComReajustePróximo = 0;
+  let visiveis = 0;
 
   const chaves = Object.keys(salas).sort((a,b)=>a.localeCompare(b, undefined, {numeric:true}));
-  
+
   chaves.forEach(num => {
-    const { s, u, lAnt, consumo, isOcup, needsReajuste, valorAgua, valorCeb, valorIptu, valorCorretagem, total } = calc[num];
+    const { s, u, lAnt, consumo, isOcup, needsReajuste, reajustePróximo, valorAgua, valorCeb, valorIptu, valorCorretagem, total } = calc[num];
     const tag = isOcup ? '<span class="tag ocup">Ocupada</span>' : '<span class="tag vazia">Vazia</span>';
     const nome = s.nome || '—';
-    
-    // Configura as cores da linha e o crachá de alerta se precisar de reajuste
-    let classVazia = isOcup ? '' : 'class="empty"';
+    const visivel = passaFiltro(num, nome);
+    if (visivel) visiveis++;
+    const rowHidden = visivel ? '' : 'hidden-by-search ';
+
+    let classVazia = isOcup ? rowHidden + 'empty' : rowHidden.trim();
     let badgeReajuste = '';
-    
+
     if (isOcup && needsReajuste) {
-      classVazia = 'class="needs-reajuste"';
+      classVazia = (rowHidden + 'needs-reajuste').trim();
       badgeReajuste = '<span class="badge-reajuste" title="Mais de 1 ano sem reajuste">⚠️ Reajustar</span>';
       salasComReajustePendente++;
+    } else if (isOcup && reajustePróximo) {
+      classVazia = (rowHidden + 'reajuste-proximo').trim();
+      badgeReajuste = '<span class="badge-reajuste-proximo" title="Completa 1 ano no próximo mês">🔔 Reajuste em 1 mês</span>';
+      salasComReajustePróximo++;
     }
+    const classAttr = classVazia ? `class="${classVazia}"` : '';
 
     const nomeComBadge = nome + badgeReajuste;
     const disableIfNotOcup = isOcup ? '' : 'disabled';
-    
+
     const iptuChk = u.iptu_cobrar !== false;
     const aguaChk = u.agua_cobrar !== false;
     const cebChk  = u.ceb_cobrar  !== false;
     const extChk  = u.extra_cobrar!== false;
 
-    // Formatação das datas para exibição no cadastro
     const txtInicio = s.dataInicio ? formatMonth(s.dataInicio) : '--/----';
     const txtReajuste = s.ultimoReajuste ? formatMonth(s.ultimoReajuste) : 'N/A';
 
-    // Cadastro
-    hCad += `<tr ${classVazia}><td><b>${num}</b></td><td>${tag}</td><td>${nomeComBadge}</td><td>${txtInicio} <span style="color:var(--muted);font-size:11px"> (Base: ${txtReajuste})</span></td><td class="num">${brl(s.loc)}</td><td class="num">${brl(s.iptu)}</td><td><button class="btn sm" onclick="openSala('${num}')">Editar</button> <button class="btn sm ghost" style="color:var(--danger); border-color:var(--danger);" onclick="excluirSala('${num}')">Excluir</button></td></tr>`;
+    const btnReajustar = (isOcup && (needsReajuste || reajustePróximo))
+      ? `<button class="btn sm" style="color:var(--ok);border-color:var(--ok);" onclick="marcarReajustado('${num}')" title="Marca o mês atual como último reajuste">✔ Marcar Reajustado</button> `
+      : '';
 
-    // IPTU
-    hIptu += `<tr ${classVazia}><td><b>${num}</b></td><td>${nomeComBadge}</td><td class="num">${brl(s.iptu)}</td><td class="num">${brl(s.iptu/12)}</td><td class="center"><input type="checkbox" ${iptuChk?'checked':''} onchange="salvarUnit('${num}', 'iptu_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
+    hCad += `<tr ${classAttr}><td><b>${num}</b></td><td>${tag}</td><td>${nomeComBadge}</td><td>${txtInicio} <span style="color:var(--muted);font-size:11px"> (Base: ${txtReajuste})</span></td><td class="num">${brl(s.loc)}</td><td class="num">${brl(s.iptu)}</td><td>${btnReajustar}<button class="btn sm" onclick="openSala('${num}')">Editar</button> <button class="btn sm ghost" style="color:var(--danger); border-color:var(--danger);" onclick="excluirSala('${num}')">Excluir</button></td></tr>`;
 
-    // Água
-    hAgua += `<tr ${classVazia}><td><b>${num}</b></td><td>${nomeComBadge}</td><td class="num">${lAnt}</td><td class="num"><input type="number" class="editable num" value="${u.agua_leitura!==undefined?u.agua_leitura:''}" onchange="salvarUnit('${num}', 'agua_leitura', this.value)" ${disableIfNotOcup}></td><td class="num"><b>${consumo}</b></td><td class="num">R$ ${brl(aguaChk ? valorAgua : 0)}</td><td class="center"><input type="checkbox" ${aguaChk?'checked':''} onchange="salvarUnit('${num}', 'agua_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
+    hIptu += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeComBadge}</td><td class="num">${brl(s.iptu)}</td><td class="num">${brl(s.iptu/12)}</td><td class="center"><input type="checkbox" ${iptuChk?'checked':''} onchange="salvarUnit('${num}', 'iptu_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
 
-    // Energia
-    let cebBase = isOcup && ocupadas > 0 ? mDados.globais.ceb / ocupadas : 0;
-    hCeb += `<tr ${classVazia}><td><b>${num}</b></td><td>${nomeComBadge}</td><td>${tag}</td><td class="num">R$ ${brl(cebChk ? cebBase : 0)}</td><td class="center"><input type="checkbox" ${cebChk?'checked':''} onchange="salvarUnit('${num}', 'ceb_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
+    hAgua += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeComBadge}</td><td class="num">${lAnt}</td><td class="num"><input type="number" class="editable num" value="${u.agua_leitura!==undefined?u.agua_leitura:''}" onchange="salvarUnit('${num}', 'agua_leitura', this.value)" ${disableIfNotOcup}></td><td class="num"><b>${consumo}</b></td><td class="num">R$ ${brl(aguaChk ? valorAgua : 0)}</td><td class="center"><input type="checkbox" ${aguaChk?'checked':''} onchange="salvarUnit('${num}', 'agua_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
 
-    // Extras
-    hExt += `<tr ${classVazia}><td><b>${num}</b></td><td>${nomeComBadge}</td><td><input type="text" class="editable" style="width:100%;text-align:left;" value="${u.extra_desc||''}" placeholder="Ex: Manutenção" onchange="salvarUnit('${num}', 'extra_desc', this.value)" ${disableIfNotOcup}></td><td class="num"><input type="text" class="editable num" value="${brl(u.extra_valor)}" onchange="salvarUnit('${num}', 'extra_valor', this.value)" ${disableIfNotOcup}></td><td class="center"><input type="checkbox" ${extChk?'checked':''} onchange="salvarUnit('${num}', 'extra_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
+    let cebBase = isOcup && salasParaRateioCeb > 0 ? mDados.globais.ceb / salasParaRateioCeb : 0;
+    hCeb += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeComBadge}</td><td>${tag}</td><td class="num">R$ ${brl(cebChk ? cebBase : 0)}</td><td class="center"><input type="checkbox" ${cebChk?'checked':''} onchange="salvarUnit('${num}', 'ceb_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
 
-    // Corretagem e Resumo
+    hExt += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeComBadge}</td><td><input type="text" class="editable" style="width:100%;text-align:left;" value="${u.extra_desc||''}" placeholder="Ex: Manutenção" onchange="salvarUnit('${num}', 'extra_desc', this.value)" ${disableIfNotOcup}></td><td class="num"><input type="text" class="editable num" value="${brl(u.extra_valor)}" onchange="salvarUnit('${num}', 'extra_valor', this.value)" ${disableIfNotOcup}></td><td class="center"><input type="checkbox" ${extChk?'checked':''} onchange="salvarUnit('${num}', 'extra_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
+
     let btnPago = isOcup ? `<button class="btn sm ${u.pago?'primary':''}" onclick="togglePago('${num}')">${u.pago?'✔ Pago':'Pendente'}</button>` : '—';
-    
-    hCorr += `<tr ${classVazia}><td><b>${num}</b></td><td>${nomeComBadge}</td><td class="num">${brl(s.loc)}</td><td class="num">${brl(valorCorretagem)}</td><td class="center">${btnPago}</td></tr>`;
 
-    if(isOcup) { 
-      tLoc += s.loc; tIptu += valorIptu; tAgua += valorAgua; tCeb += valorCeb; 
+    hCorr += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeComBadge}</td><td class="num">${brl(s.loc)}</td><td class="num">${brl(valorCorretagem)}</td><td class="center">${btnPago}</td></tr>`;
+
+    if(isOcup) {
+      tLoc += s.loc; tIptu += valorIptu; tAgua += valorAgua; tCeb += valorCeb;
       let valorExtra = extChk ? parseNum(u.extra_valor) : 0;
-      tExt += valorExtra; tGeral += total; 
-      
+      tExt += valorExtra; tGeral += total;
+
       if(u.pago) tCorretagemTotal += valorCorretagem;
     }
-    
-    hRes += `<tr ${classVazia}><td><b>${num}</b></td><td>${nomeComBadge}</td><td class="num">${brl(s.loc)}</td><td class="num">${brl(valorIptu)}</td><td class="num">${brl(valorAgua)}</td><td class="num">${brl(valorCeb)}</td><td class="num">${brl(extChk ? u.extra_valor : 0)}</td><td class="num"><b>R$ ${brl(total)}</b></td><td class="center">${btnPago}</td></tr>`;
+
+    hRes += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeComBadge}</td><td class="num">${brl(s.loc)}</td><td class="num">${brl(valorIptu)}</td><td class="num">${brl(valorAgua)}</td><td class="num">${brl(valorCeb)}</td><td class="num">${brl(extChk ? u.extra_valor : 0)}</td><td class="num"><b>R$ ${brl(total)}</b></td><td class="center">${btnPago}</td></tr>`;
   });
 
   if(chaves.length===0){
     const msg = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px;">Nenhuma sala cadastrada. Clique em "+ Nova Sala" para começar.</td></tr>';
     hCad=msg; hIptu=msg; hAgua=msg; hCeb=msg; hExt=msg; hCorr=msg; hRes=msg;
+  } else if (visiveis === 0) {
+    const msg = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px;">Nenhuma sala encontrada para esta busca.</td></tr>';
+    hCad=msg; hIptu=msg; hAgua=msg; hCeb=msg; hExt=msg; hCorr=msg; hRes=msg;
   }
 
-  // Controle da exibição do Alerta Global
+  const searchCountEl = document.getElementById('searchCount');
+  searchCountEl.textContent = filtroBusca ? `${visiveis} de ${chaves.length} sala(s)` : '';
+
   const bannerAlerta = document.getElementById('alertReajuste');
   if (salasComReajustePendente > 0) {
     bannerAlerta.style.display = 'block';
-    bannerAlerta.innerText = `⚠️ ATENÇÃO: ${salasComReajustePendente} sala(s) atingiram/passaram de 12 meses e precisam de reajuste de contrato!`;
+    bannerAlerta.className = '';
+    let texto = `⚠️ ATENÇÃO: ${salasComReajustePendente} sala(s) atingiram/passaram de 12 meses e precisam de reajuste de contrato!`;
+    if (salasComReajustePróximo > 0) {
+      texto += ` (e mais ${salasComReajustePróximo} sala(s) completam 1 ano no próximo mês)`;
+    }
+    bannerAlerta.innerText = texto;
+  } else if (salasComReajustePróximo > 0) {
+    bannerAlerta.style.display = 'block';
+    bannerAlerta.className = 'aviso-proximo';
+    bannerAlerta.innerText = `🔔 Aviso: ${salasComReajustePróximo} sala(s) completam 1 ano de contrato no próximo mês — já é hora de se planejar para o reajuste.`;
   } else {
     bannerAlerta.style.display = 'none';
   }
@@ -687,7 +1221,8 @@ function renderAll(){
   document.querySelector('#tblCorretagem tbody').innerHTML = hCorr;
   document.querySelector('#tblResumo tbody').innerHTML = hRes;
 
-  document.querySelector('#tblAgua tfoot').innerHTML = `<tr class="total"><td colspan="4">TOTAIS DA COMPETÊNCIA</td><td class="num">${totConsumo}</td><td class="num">R$ ${brl(mDados.globais.caesb)}</td><td></td></tr>`;
+  const modoLabel = modoRateioAgua === 'linear' ? 'LINEAR' : 'POR CONSUMO';
+  document.querySelector('#tblAgua tfoot').innerHTML = `<tr class="total"><td colspan="4">TOTAIS DA COMPETÊNCIA (Modo: ${modoLabel})</td><td class="num">${totConsumo}</td><td class="num">R$ ${brl(mDados.globais.caesb)}</td><td></td></tr>`;
   document.querySelector('#tblCorretagem tfoot').innerHTML = `<tr class="total"><td colspan="3">TOTAL A PAGAR DE CORRETAGEM (Apenas aluguéis recebidos)</td><td class="num" style="color:var(--brand2); font-size:15px;">R$ ${brl(tCorretagemTotal)}</td><td></td></tr>`;
   document.querySelector('#tblResumo tfoot').innerHTML = `<tr class="total"><td colspan="2">TOTAIS (SOMENTE OCUPADAS)</td><td class="num">${brl(tLoc)}</td><td class="num">${brl(tIptu)}</td><td class="num">${brl(tAgua)}</td><td class="num">${brl(tCeb)}</td><td class="num">${brl(tExt)}</td><td class="num" style="color:var(--brand); font-size:15px;">R$ ${brl(tGeral)}</td><td></td></tr>`;
 }
