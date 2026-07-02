@@ -410,8 +410,8 @@
   <div class="dlg-head">Conexão com a Planilha (Google Apps Script)</div>
   <div class="dlg-body">
     <p class="hint" style="margin-top:0;">
-      <b>Passo 1:</b> copie o script abaixo e cole no Apps Script da sua planilha (Extensões &gt; Apps Script), substituindo todo o conteúdo do arquivo Code.gs. Implante como App da Web ("Qualquer pessoa" tem acesso) e copie a URL gerada.<br>
-      <b>Passo 2:</b> cole essa URL no campo "URL do Apps Script" logo abaixo e clique em "Salvar e Recarregar Dados".
+      Copie o script abaixo e cole no Apps Script da sua planilha (Extensões &gt; Apps Script), substituindo o conteúdo do arquivo Code.gs. Implante como App da Web ("Qualquer pessoa" tem acesso) e copie a URL gerada.<br><br>
+      <b>Para trocar a URL da planilha:</b> edite o arquivo HTML, localize a linha <code style="background:var(--paper);padding:2px 5px;border-radius:3px;">const API_URL = '...'</code> no início do bloco &lt;script&gt;, substitua pela nova URL, salve e suba para o GitHub.
     </p>
 
     <div class="fld" style="width:100%;margin-bottom:16px;">
@@ -421,8 +421,8 @@
     </div>
 
     <div class="fld" style="width:100%;">
-      <label>URL do Apps Script (/exec)</label>
-      <input id="cfgApiUrl" class="mono" style="width:100%;" placeholder="https://script.google.com/macros/s/AKfycby.../exec">
+      <label>URL do Apps Script (/exec) — definida no arquivo HTML</label>
+      <input id="cfgApiUrl" class="mono" style="width:100%;background:var(--paper);color:var(--muted);" readonly>
     </div>
     <div class="cfg-status-line" id="cfgStatusLine" style="display:none;">
       <span class="cfg-dot" id="cfgDot"></span>
@@ -432,7 +432,6 @@
   <div class="dlg-foot">
     <button class="btn" onclick="dlgConfig.close()">Fechar</button>
     <button class="btn" onclick="testarConexao()">🔌 Testar Conexão</button>
-    <button class="btn primary" onclick="salvarConfig()">Salvar e Recarregar Dados</button>
   </div>
 </dialog>
 
@@ -550,16 +549,20 @@ function salvarDados(dados) {
 `;
 
 // ============================================================
-// CONFIGURAÇÃO DA CONEXÃO (URL do Apps Script editável pelo usuário)
 // ============================================================
-const CONFIG_KEY = 'loc_v6_api_url';
+// CONFIGURAÇÃO DA CONEXÃO
+// A URL do Apps Script fica gravada aqui no arquivo.
+// Quando gerar um novo deploy, troque o valor de API_URL abaixo,
+// salve o arquivo e suba para o GitHub. Não depende do navegador.
+// ============================================================
+const API_URL = 'https://script.google.com/macros/s/AKfycbxXNY_Ua-kQB5KcONNZ9gyc0Q4xe1VJ-Z5WfP8zdG9QsD9BNMXM0LvhMSeQN7XGUbrA/exec';
 
 function getApiUrl(){
-  return (localStorage.getItem(CONFIG_KEY) || '').trim();
+  return API_URL.trim();
 }
 
 function openConfig(){
-  document.getElementById('cfgApiUrl').value = getApiUrl();
+  document.getElementById('cfgApiUrl').value = API_URL;
   document.getElementById('cfgScript').value = APPS_SCRIPT_CODE;
   document.getElementById('cfgStatusLine').style.display = 'none';
   dlgConfig.showModal();
@@ -588,7 +591,6 @@ function setCfgStatus(state, text){
   txt.textContent = text;
 }
 
-// Valida o formato da URL e aponta o problema mais provável antes mesmo de testar
 function validarFormatoUrl(url){
   if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(url)){
     if(url.includes('/dev')){
@@ -606,7 +608,7 @@ function validarFormatoUrl(url){
 
 async function testarConexao(){
   const url = document.getElementById('cfgApiUrl').value.trim();
-  if(!url){ setCfgStatus('err', 'Cole uma URL antes de testar.'); return; }
+  if(!url){ setCfgStatus('err', 'Nenhuma URL configurada no arquivo.'); return; }
 
   const erroFormato = validarFormatoUrl(url);
   if(erroFormato){ setCfgStatus('err', erroFormato); return; }
@@ -620,7 +622,7 @@ async function testarConexao(){
       return;
     }
     if (!resp.ok) {
-      setCfgStatus('err', `A planilha respondeu com erro HTTP ${resp.status}. Tente reimplantar o script (Nova implantação) e colar a URL nova.`);
+      setCfgStatus('err', `A planilha respondeu com erro HTTP ${resp.status}. Tente reimplantar o script (Nova implantação) e atualizar a URL no arquivo.`);
       return;
     }
 
@@ -630,7 +632,7 @@ async function testarConexao(){
       dados = JSON.parse(texto);
     } catch(e){
       if(texto.includes('<html') || texto.includes('accounts.google.com') || texto.includes('Sign in')){
-        setCfgStatus('err', 'O Google pediu login em vez de devolver dados — isso costuma acontecer quando "Quem pode acessar" não está em "Qualquer pessoa", ou a implantação ainda não foi autorizada. Reimplante o script e autorize as permissões pedidas.');
+        setCfgStatus('err', 'O Google pediu login em vez de devolver dados — confirme que "Quem pode acessar" está em "Qualquer pessoa" na implantação.');
       } else {
         setCfgStatus('err', 'A URL respondeu, mas não em formato JSON válido. Confira se colou todo o código do Code.gs e se implantou como "App da Web".');
       }
@@ -649,26 +651,20 @@ async function testarConexao(){
       setCfgStatus('err', 'Resposta inesperada da planilha.');
     }
   } catch(erro){
-    setCfgStatus('err', 'Não foi possível conectar (falha de rede ou CORS). Confira sua internet e se a URL foi copiada corretamente, sem espaços extras.');
+    setCfgStatus('err', 'Não foi possível conectar. Confira sua internet e se a URL está correta.');
     console.error(erro);
   }
 }
 
 function salvarConfig(){
-  const url = document.getElementById('cfgApiUrl').value.trim();
-
-  if(!url){
-    if(!confirm('Nenhuma URL informada. Deseja desconectar e trabalhar apenas localmente (sem sincronizar com a planilha)?')) return;
-    localStorage.removeItem(CONFIG_KEY);
-  } else {
-    localStorage.setItem(CONFIG_KEY, url);
-  }
+  // A URL agora mora no arquivo HTML (constante API_URL no topo do script).
+  // Este botão só fecha o painel — para trocar a URL, edite o arquivo e suba no GitHub.
+  alert('Para trocar a URL da planilha, edite o arquivo HTML e altere a constante API_URL no início do bloco <script>. Depois salve e suba para o GitHub.');
   dlgConfig.close();
-  carregarDaNuvem();
 }
 
 function atualizarAlertConfig(){
-  document.getElementById('alertConfig').style.display = getApiUrl() ? 'none' : 'block';
+  document.getElementById('alertConfig').style.display = API_URL ? 'none' : 'block';
 }
 
 // ============================================================
@@ -676,7 +672,7 @@ function atualizarAlertConfig(){
 // ============================================================
 let salas = {};
 let meses = {};
-let curMonth = localStorage.getItem('loc_v3_cur') || new Date().toISOString().slice(0,7);
+let curMonth = new Date().toISOString().slice(0,7);
 let editKey = null;
 let temAlteracaoPendente = false;
 let filtroBusca = '';
@@ -848,7 +844,6 @@ function mudarMes(dir){
   m += dir;
   if(m<1){ m=12; y--; } else if(m>12){ m=1; y++; }
   curMonth = `${y}-${String(m).padStart(2,'0')}`;
-  localStorage.setItem('loc_v3_cur', curMonth);
   garantirMes(curMonth);
   renderAll();
 }
