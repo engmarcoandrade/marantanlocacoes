@@ -1440,7 +1440,7 @@ function renderAll(){
       if(u.pago) tCorretagemTotal += valorCorretagem;
     }
 
-    hRes += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeComBadge}</td><td class="num">${brl(s.loc)}</td><td class="num">${brl(valorIptu)}</td><td class="num">${isOcup ? consumo : '—'}</td><td class="num">${brl(valorAgua)}</td><td class="num">${brl(valorCeb)}</td><td class="num">${brl(extChk ? u.extra_valor : 0)}</td><td class="num"><b>R$ ${brl(total)}</b></td><td class="center">${btnPago}</td></tr>`;
+    hRes += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeComBadge}</td><td class="num">${brl(s.loc)}</td><td class="num">${brl(valorIptu)}</td><td class="num">${isOcup ? brl(consumo/100) : '—'}</td><td class="num">${brl(valorAgua)}</td><td class="num">${brl(valorCeb)}</td><td class="num">${brl(extChk ? u.extra_valor : 0)}</td><td class="num"><b>R$ ${brl(total)}</b></td><td class="center">${btnPago}</td></tr>`;
   });
 
   if(chaves.length===0){
@@ -1482,7 +1482,7 @@ function renderAll(){
   const modoLabel = modoRateioAgua === 'linear' ? 'LINEAR' : 'POR CONSUMO';
   document.querySelector('#tblAgua tfoot').innerHTML = `<tr class="total"><td colspan="4">TOTAIS DA COMPETÊNCIA (Modo: ${modoLabel})</td><td class="num">${totConsumo}</td><td class="num">R$ ${brl(mDados.globais.caesb)}</td><td></td></tr>`;
   document.querySelector('#tblCorretagem tfoot').innerHTML = `<tr class="total"><td colspan="3">TOTAL A PAGAR DE CORRETAGEM (Apenas aluguéis recebidos)</td><td class="num" style="color:var(--brand2); font-size:15px;">R$ ${brl(tCorretagemTotal)}</td><td></td></tr>`;
-  document.querySelector('#tblResumo tfoot').innerHTML = `<tr class="total"><td colspan="2">TOTAIS (SOMENTE OCUPADAS)</td><td class="num">${brl(tLoc)}</td><td class="num">${brl(tIptu)}</td><td class="num">${tConsumoOcup}</td><td class="num">${brl(tAgua)}</td><td class="num">${brl(tCeb)}</td><td class="num">${brl(tExt)}</td><td class="num" style="color:var(--brand); font-size:15px;">R$ ${brl(tGeral)}</td><td></td></tr>`;
+  document.querySelector('#tblResumo tfoot').innerHTML = `<tr class="total"><td colspan="2">TOTAIS (SOMENTE OCUPADAS)</td><td class="num">${brl(tLoc)}</td><td class="num">${brl(tIptu)}</td><td class="num">${brl(tConsumoOcup/100)}</td><td class="num">${brl(tAgua)}</td><td class="num">${brl(tCeb)}</td><td class="num">${brl(tExt)}</td><td class="num" style="color:var(--brand); font-size:15px;">R$ ${brl(tGeral)}</td><td></td></tr>`;
 }
 
 carregarDaNuvem();
