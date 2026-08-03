@@ -202,6 +202,14 @@
   .cfg-dot.ok{background:var(--ok);}
   .cfg-dot.err{background:var(--danger);}
   .cfg-dot.pending{background:var(--accent);}
+
+  /* ===== Comprovantes (CAESB / CEB) ===== */
+  .dropzone{border:2px dashed var(--brand2);border-radius:10px;padding:20px;text-align:center;cursor:pointer;background:var(--paper);color:var(--muted);transition:all .2s;min-height:80px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;}
+  .dropzone:hover{background:var(--card);border-color:var(--brand);color:var(--ink);}
+  .dropzone.has-img{border-style:solid;cursor:default;padding:12px;}
+  .dropzone img{max-width:100%;max-height:280px;border-radius:6px;box-shadow:var(--shadow);}
+  .dropzone .dz-msg{font-size:13.5px;}
+  .comprov-actions{margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;}
 </style>
 </head>
 <body>
@@ -311,6 +319,20 @@
         </table>
       </div>
     </div>
+
+    <div class="card">
+      <h2>📄 Comprovante e Relatório (CAESB)</h2>
+      <p class="hint">Cole aqui o print da conta de água (<b>Ctrl+V</b> em qualquer lugar desta aba) ou clique na área abaixo para escolher a imagem. O print <b>não é salvo na planilha</b> — ele vale apenas para gerar o relatório agora. Depois de gerado, use <b>Ctrl+P → Salvar como PDF</b> para arquivar/enviar ao inquilino.</p>
+      <div class="dropzone" id="dropAgua" onclick="if(!comprovantes.agua) document.getElementById('fileAgua').click()">
+        <span class="dz-msg" id="dropAguaMsg">📋 Cole o print da conta (Ctrl+V) ou clique para escolher a imagem</span>
+        <img id="imgAgua" style="display:none;" alt="Print da conta CAESB">
+      </div>
+      <input type="file" id="fileAgua" accept="image/*" style="display:none" onchange="carregarComprovante(event,'agua')">
+      <div class="comprov-actions">
+        <button class="btn" id="btnRemAgua" style="display:none;color:var(--danger);border-color:var(--danger);" onclick="removerComprovante('agua')">🗑 Remover / Trocar print</button>
+        <button class="btn primary" onclick="gerarRelatorio('agua')">🖨 Gerar Relatório CAESB</button>
+      </div>
+    </div>
   </section>
 
   <section class="panel" id="panel-energia">
@@ -326,6 +348,20 @@
           <thead><tr><th>Sala</th><th>Inquilino</th><th>Status</th><th class="num">Rateio (R$)</th><th class="center">Cobrar neste mês?</th></tr></thead>
           <tbody></tbody>
         </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📄 Comprovante e Relatório (CEB)</h2>
+      <p class="hint">Cole aqui o print da conta de energia (<b>Ctrl+V</b> em qualquer lugar desta aba) ou clique na área abaixo para escolher a imagem. O print <b>não é salvo na planilha</b> — ele vale apenas para gerar o relatório agora. Depois de gerado, use <b>Ctrl+P → Salvar como PDF</b> para arquivar/enviar ao inquilino.</p>
+      <div class="dropzone" id="dropCeb" onclick="if(!comprovantes.energia) document.getElementById('fileCeb').click()">
+        <span class="dz-msg" id="dropCebMsg">📋 Cole o print da conta (Ctrl+V) ou clique para escolher a imagem</span>
+        <img id="imgCeb" style="display:none;" alt="Print da conta CEB">
+      </div>
+      <input type="file" id="fileCeb" accept="image/*" style="display:none" onchange="carregarComprovante(event,'energia')">
+      <div class="comprov-actions">
+        <button class="btn" id="btnRemCeb" style="display:none;color:var(--danger);border-color:var(--danger);" onclick="removerComprovante('energia')">🗑 Remover / Trocar print</button>
+        <button class="btn primary" onclick="gerarRelatorio('energia')">🖨 Gerar Relatório CEB</button>
       </div>
     </div>
   </section>
@@ -371,7 +407,7 @@
         <table id="tblResumo">
           <thead><tr>
             <th>Sala</th><th>Inquilino</th>
-            <th class="num">Locação</th><th class="num">IPTU</th><th class="num">Água</th><th class="num">Energia</th><th class="num">Extras</th>
+            <th class="num">Locação</th><th class="num">IPTU</th><th class="num">Consumo (m³)</th><th class="num">Água</th><th class="num">Energia</th><th class="num">Extras</th>
             <th class="num">TOTAL</th><th class="center">Pagamento</th>
           </tr></thead>
           <tbody></tbody>
@@ -828,6 +864,232 @@ function exportarExcel(){
   link.click();
 }
 
+// ============================================================
+// COMPROVANTES CAESB / CEB
+// A imagem vive apenas na memória desta sessão (nada vai para a
+// planilha — célula do Sheets não comporta imagem em base64).
+// Se recarregar a página, é só colar o print de novo.
+// ============================================================
+const comprovantes = { agua: null, energia: null };
+
+function carregarComprovante(event, tipo){
+  const file = event.target.files[0];
+  if(!file) return;
+  lerArquivoComprovante(file, tipo);
+  event.target.value = '';
+}
+
+function lerArquivoComprovante(file, tipo){
+  if(!file || !file.type || !file.type.startsWith('image/')){
+    alert('O arquivo precisa ser uma imagem (print da conta).');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    comprovantes[tipo] = e.target.result;
+    renderComprovante(tipo);
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderComprovante(tipo){
+  const isAgua = tipo === 'agua';
+  const img  = document.getElementById(isAgua ? 'imgAgua'     : 'imgCeb');
+  const msg  = document.getElementById(isAgua ? 'dropAguaMsg' : 'dropCebMsg');
+  const btn  = document.getElementById(isAgua ? 'btnRemAgua'  : 'btnRemCeb');
+  const zone = document.getElementById(isAgua ? 'dropAgua'    : 'dropCeb');
+  const data = comprovantes[tipo];
+  if(data){
+    img.src = data; img.style.display = 'block';
+    msg.style.display = 'none';
+    btn.style.display = 'inline-block';
+    zone.classList.add('has-img');
+  } else {
+    img.removeAttribute('src'); img.style.display = 'none';
+    msg.style.display = 'block';
+    btn.style.display = 'none';
+    zone.classList.remove('has-img');
+  }
+}
+
+function removerComprovante(tipo){
+  comprovantes[tipo] = null;
+  renderComprovante(tipo);
+}
+
+// Ctrl+V em qualquer lugar da página: o print vai para a aba ativa (Água ou Energia)
+document.addEventListener('paste', function(e){
+  let tipo = null;
+  if(document.getElementById('panel-agua').classList.contains('active')) tipo = 'agua';
+  else if(document.getElementById('panel-energia').classList.contains('active')) tipo = 'energia';
+  if(!tipo) return;
+
+  // Não intercepta colagem dentro de campos de texto/número
+  const alvo = document.activeElement;
+  if(alvo && (alvo.tagName === 'INPUT' || alvo.tagName === 'TEXTAREA')) return;
+
+  const items = (e.clipboardData && e.clipboardData.items) ? e.clipboardData.items : [];
+  for(let i = 0; i < items.length; i++){
+    if(items[i].type && items[i].type.startsWith('image/')){
+      e.preventDefault();
+      lerArquivoComprovante(items[i].getAsFile(), tipo);
+      return;
+    }
+  }
+});
+
+// ============================================================
+// RELATÓRIO A4 (CAESB / CEB)
+// Abre uma janela pronta para imprimir: cabeçalho + print da
+// conta + tabela de rateio das salas. Ctrl+P → Salvar como PDF.
+// ============================================================
+function escapeHtml(s){
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function gerarRelatorio(tipo){
+  const isAgua = tipo === 'agua';
+  const { calc, totConsumo, modoRateioAgua, perdaConsumo } = calcularCompetencia();
+  const mDados = meses[curMonth];
+  const totalFatura = isAgua ? mDados.globais.caesb : mDados.globais.ceb;
+
+  if(!totalFatura){
+    if(!confirm('O valor total da fatura está zerado neste mês. Gerar o relatório mesmo assim?')) return;
+  }
+  if(!comprovantes[tipo]){
+    if(!confirm('Nenhum print da conta foi colado. Gerar o relatório SEM o comprovante?')) return;
+  }
+
+  const chaves = Object.keys(calc).sort((a,b)=>a.localeCompare(b, undefined, {numeric:true}));
+  let linhas = '';
+  let somaValores = 0, somaConsumo = 0, n = 0;
+
+  chaves.forEach(num => {
+    const c = calc[num];
+    if(isAgua){
+      if(c.u.agua_cobrar === false) return;               // só salas marcadas para cobrança
+      if(!c.isOcup && c.consumo === 0 && c.valorAgua === 0) return; // ignora vazias sem movimento
+      linhas += `<tr><td><b>${escapeHtml(num)}</b></td><td>${escapeHtml(c.s.nome||'—')}</td><td class="num">${c.lAnt}</td><td class="num">${c.lAtual}</td><td class="num">${c.consumo}</td><td class="num">R$ ${brl(c.valorAgua)}</td></tr>`;
+      somaValores += c.valorAgua; somaConsumo += c.consumo; n++;
+    } else {
+      if(!(c.isOcup && c.u.ceb_cobrar !== false)) return; // só ocupadas marcadas para cobrança
+      linhas += `<tr><td><b>${escapeHtml(num)}</b></td><td>${escapeHtml(c.s.nome||'—')}</td><td class="num">R$ ${brl(c.valorCeb)}</td></tr>`;
+      somaValores += c.valorCeb; n++;
+    }
+  });
+
+  if(n === 0){
+    alert('Nenhuma sala marcada para cobrança de ' + (isAgua ? 'água' : 'energia') + ' neste mês.');
+    return;
+  }
+
+  const titulo = isAgua
+    ? 'Demonstrativo de Rateio de Água — CAESB'
+    : 'Demonstrativo de Rateio de Energia — CEB / Equatorial';
+
+  const hoje = new Date().toLocaleDateString('pt-BR');
+
+  let infoRateio = '';
+  if(isAgua){
+    if(modoRateioAgua === 'linear'){
+      infoRateio = `Critério de rateio: <b>divisão linear</b> — o valor total da fatura foi dividido igualmente entre as ${n} sala(s) listada(s).`;
+    } else {
+      infoRateio = `Critério de rateio: <b>proporcional ao consumo individual</b> (leitura atual − leitura anterior de cada hidrômetro).`;
+      if(mDados.globais.leituraColetiva !== '' && mDados.globais.leituraColetiva !== undefined && perdaConsumo !== null){
+        infoRateio += ` Leitura do hidrômetro coletivo: <b>${mDados.globais.leituraColetiva}</b> · Soma das leituras individuais: <b>${totConsumo}</b> · Diferença (perda/área comum): <b>${perdaConsumo}</b>.`;
+      }
+    }
+  } else {
+    infoRateio = `Critério de rateio: <b>divisão igualitária</b> do valor total da fatura entre as ${n} sala(s) ocupada(s) com cobrança de energia neste mês.`;
+  }
+
+  const cabecTabela = isAgua
+    ? '<tr><th>Sala</th><th>Inquilino</th><th class="num">Leit. Anterior</th><th class="num">Leit. Atual</th><th class="num">Consumo (m³)</th><th class="num">Valor (R$)</th></tr>'
+    : '<tr><th>Sala</th><th>Inquilino</th><th class="num">Valor do Rateio (R$)</th></tr>';
+
+  const rodapeTabela = isAgua
+    ? `<tr class="total"><td colspan="4">TOTAL</td><td class="num">${somaConsumo}</td><td class="num">R$ ${brl(somaValores)}</td></tr>`
+    : `<tr class="total"><td colspan="2">TOTAL</td><td class="num">R$ ${brl(somaValores)}</td></tr>`;
+
+  const blocoImagem = comprovantes[tipo]
+    ? `<div class="fatura"><div class="fatura-label">Reprodução da fatura ${isAgua ? 'CAESB' : 'CEB'} — competência ${formatMonth(curMonth)}</div><img src="${comprovantes[tipo]}" alt="Fatura"></div>`
+    : `<div class="fatura vazia">— Comprovante da fatura não anexado —</div>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>${titulo} — ${formatMonth(curMonth)}</title>
+<style>
+  @page { size: A4 portrait; margin: 12mm; }
+  *{box-sizing:border-box;}
+  body{font-family:"Segoe UI", Roboto, Arial, sans-serif;color:#0f172a;margin:0;font-size:12px;}
+  .cabec{border-bottom:3px solid #1e3a8a;padding-bottom:10px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;}
+  .cabec h1{margin:0;font-size:17px;color:#1e3a8a;}
+  .cabec .sub{color:#64748b;font-size:11.5px;margin-top:3px;}
+  .cabec .meta{text-align:right;font-size:11.5px;color:#334155;white-space:nowrap;}
+  .cabec .meta b{color:#1e3a8a;font-size:14px;}
+  .resumo{background:#f0f4f8;border:1px solid #cbd5e1;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:11.5px;line-height:1.5;}
+  .fatura{text-align:center;margin-bottom:12px;}
+  .fatura img{max-width:100%;max-height:118mm;border:1px solid #cbd5e1;border-radius:6px;}
+  .fatura-label{font-size:10.5px;color:#64748b;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;}
+  .fatura.vazia{color:#94a3b8;font-style:italic;padding:14px;border:1px dashed #cbd5e1;border-radius:6px;}
+  table{width:100%;border-collapse:collapse;font-size:11.5px;}
+  th,td{padding:5px 8px;border-bottom:1px solid #cbd5e1;text-align:left;}
+  th{background:#1e3a8a;color:#fff;font-size:10px;text-transform:uppercase;letter-spacing:.4px;}
+  td.num,th.num{text-align:right;font-family:"Courier New",monospace;}
+  tr.total td{font-weight:bold;background:#f0f4f8;border-top:2px solid #1e3a8a;font-size:12px;}
+  .rodape{margin-top:14px;padding-top:8px;border-top:1px solid #cbd5e1;color:#64748b;font-size:10px;display:flex;justify-content:space-between;}
+  @media print { .no-print{display:none;} }
+  .no-print{background:#1e3a8a;color:#fff;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px;}
+</style>
+</head>
+<body>
+  <div class="no-print">💡 Pressione <b>Ctrl+P</b> e escolha "Salvar como PDF" para arquivar este demonstrativo. Este aviso não sai na impressão.</div>
+
+  <div class="cabec">
+    <div>
+      <h1>${titulo}</h1>
+      <div class="sub">Demonstrativo mensal de rateio entre as unidades locadas</div>
+    </div>
+    <div class="meta">
+      Competência: <b>${formatMonth(curMonth)}</b><br>
+      Valor total da fatura: <b>R$ ${brl(totalFatura)}</b><br>
+      Emitido em: ${hoje}
+    </div>
+  </div>
+
+  <div class="resumo">${infoRateio}</div>
+
+  ${blocoImagem}
+
+  <table>
+    <thead>${cabecTabela}</thead>
+    <tbody>${linhas}</tbody>
+    <tfoot>${rodapeTabela}</tfoot>
+  </table>
+
+  <div class="rodape">
+    <span>Documento gerado pelo sistema Locações V6 em ${hoje}.</span>
+    <span>Total conferido com a fatura ${isAgua ? 'CAESB' : 'CEB'}: R$ ${brl(somaValores)} / R$ ${brl(totalFatura)}</span>
+  </div>
+
+  <scr` + `ipt>
+    window.onload = function(){ setTimeout(function(){ window.print(); }, 350); };
+  </scr` + `ipt>
+</body>
+</html>`;
+
+  const w = window.open('', '_blank');
+  if(!w){
+    alert('O navegador bloqueou a janela do relatório. Permita pop-ups para este site e tente de novo.');
+    return;
+  }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+}
+
 function toggleTheme(){
   const isDark = document.documentElement.getAttribute('data-theme')==='dark';
   document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
@@ -1110,7 +1372,7 @@ function renderAll(){
   }
 
   let hCad='', hIptu='', hAgua='', hCeb='', hExt='', hCorr='', hRes='';
-  let tLoc=0, tIptu=0, tAgua=0, tCeb=0, tExt=0, tGeral=0, tCorretagemTotal=0;
+  let tLoc=0, tIptu=0, tAgua=0, tCeb=0, tExt=0, tGeral=0, tCorretagemTotal=0, tConsumoOcup=0;
   let salasComReajustePendente = 0;
   let salasComReajustePróximo = 0;
   let visiveis = 0;
@@ -1171,20 +1433,21 @@ function renderAll(){
 
     if(isOcup) {
       tLoc += s.loc; tIptu += valorIptu; tAgua += valorAgua; tCeb += valorCeb;
+      tConsumoOcup += consumo;
       let valorExtra = extChk ? parseNum(u.extra_valor) : 0;
       tExt += valorExtra; tGeral += total;
 
       if(u.pago) tCorretagemTotal += valorCorretagem;
     }
 
-    hRes += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeComBadge}</td><td class="num">${brl(s.loc)}</td><td class="num">${brl(valorIptu)}</td><td class="num">${brl(valorAgua)}</td><td class="num">${brl(valorCeb)}</td><td class="num">${brl(extChk ? u.extra_valor : 0)}</td><td class="num"><b>R$ ${brl(total)}</b></td><td class="center">${btnPago}</td></tr>`;
+    hRes += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeComBadge}</td><td class="num">${brl(s.loc)}</td><td class="num">${brl(valorIptu)}</td><td class="num">${isOcup ? consumo : '—'}</td><td class="num">${brl(valorAgua)}</td><td class="num">${brl(valorCeb)}</td><td class="num">${brl(extChk ? u.extra_valor : 0)}</td><td class="num"><b>R$ ${brl(total)}</b></td><td class="center">${btnPago}</td></tr>`;
   });
 
   if(chaves.length===0){
-    const msg = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px;">Nenhuma sala cadastrada. Clique em "+ Nova Sala" para começar.</td></tr>';
+    const msg = '<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:20px;">Nenhuma sala cadastrada. Clique em "+ Nova Sala" para começar.</td></tr>';
     hCad=msg; hIptu=msg; hAgua=msg; hCeb=msg; hExt=msg; hCorr=msg; hRes=msg;
   } else if (visiveis === 0) {
-    const msg = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px;">Nenhuma sala encontrada para esta busca.</td></tr>';
+    const msg = '<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:20px;">Nenhuma sala encontrada para esta busca.</td></tr>';
     hCad=msg; hIptu=msg; hAgua=msg; hCeb=msg; hExt=msg; hCorr=msg; hRes=msg;
   }
 
@@ -1219,7 +1482,7 @@ function renderAll(){
   const modoLabel = modoRateioAgua === 'linear' ? 'LINEAR' : 'POR CONSUMO';
   document.querySelector('#tblAgua tfoot').innerHTML = `<tr class="total"><td colspan="4">TOTAIS DA COMPETÊNCIA (Modo: ${modoLabel})</td><td class="num">${totConsumo}</td><td class="num">R$ ${brl(mDados.globais.caesb)}</td><td></td></tr>`;
   document.querySelector('#tblCorretagem tfoot').innerHTML = `<tr class="total"><td colspan="3">TOTAL A PAGAR DE CORRETAGEM (Apenas aluguéis recebidos)</td><td class="num" style="color:var(--brand2); font-size:15px;">R$ ${brl(tCorretagemTotal)}</td><td></td></tr>`;
-  document.querySelector('#tblResumo tfoot').innerHTML = `<tr class="total"><td colspan="2">TOTAIS (SOMENTE OCUPADAS)</td><td class="num">${brl(tLoc)}</td><td class="num">${brl(tIptu)}</td><td class="num">${brl(tAgua)}</td><td class="num">${brl(tCeb)}</td><td class="num">${brl(tExt)}</td><td class="num" style="color:var(--brand); font-size:15px;">R$ ${brl(tGeral)}</td><td></td></tr>`;
+  document.querySelector('#tblResumo tfoot').innerHTML = `<tr class="total"><td colspan="2">TOTAIS (SOMENTE OCUPADAS)</td><td class="num">${brl(tLoc)}</td><td class="num">${brl(tIptu)}</td><td class="num">${tConsumoOcup}</td><td class="num">${brl(tAgua)}</td><td class="num">${brl(tCeb)}</td><td class="num">${brl(tExt)}</td><td class="num" style="color:var(--brand); font-size:15px;">R$ ${brl(tGeral)}</td><td></td></tr>`;
 }
 
 carregarDaNuvem();
