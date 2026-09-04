@@ -224,6 +224,7 @@
   .ctr-acoes{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;}
   .ctr-vazio{text-align:center;color:var(--muted);padding:24px;font-style:italic;}
   .badge-ctr{font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:var(--brand2);color:#fff;margin-left:5px;}
+  .badge-hist{font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:10px;background:var(--muted);color:#fff;margin-left:5px;white-space:nowrap;}
   .ctr-alerta{background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:8px;padding:10px 12px;font-size:12.5px;margin-bottom:12px;line-height:1.5;}
   [data-theme="dark"] .ctr-alerta{background:#3b2410;border-color:#9a3412;color:#fdba74;}
 </style>
@@ -954,7 +955,7 @@ function exportarExcel(){
     const c = calc[num];
     if (c.isOcup) {
       const statPagamento = c.u.pago ? "Pago" : "Pendente";
-      csv += `"${num}";"${c.s.nome}";"${brl(c.s.loc)}";"${brl(c.valorIptu)}";"${brl(c.valorAgua)}";"${brl(c.valorCeb)}";"${brl(parseNum(c.u.extra_valor))}";"${brl(c.total)}";"${statPagamento}";"${brl(c.valorCorretagem)}"\n`;
+      csv += `"${num}";"${c.nomeMes}";"${brl(c.s.loc)}";"${brl(c.valorIptu)}";"${brl(c.valorAgua)}";"${brl(c.valorCeb)}";"${brl(parseNum(c.u.extra_valor))}";"${brl(c.total)}";"${statPagamento}";"${brl(c.valorCorretagem)}"\n`;
     }
   });
 
@@ -1070,11 +1071,11 @@ function gerarRelatorio(tipo){
     if(isAgua){
       if(c.u.agua_cobrar === false) return;               // só salas marcadas para cobrança
       if(!c.isOcup && c.consumo === 0 && c.valorAgua === 0) return; // ignora vazias sem movimento
-      linhas += `<tr><td><b>${escapeHtml(num)}</b></td><td>${escapeHtml(c.s.nome||'—')}</td><td class="num">${c.lAnt}</td><td class="num">${c.lAtual}</td><td class="num">${c.consumo}</td><td class="num">R$ ${brl(c.valorAgua)}</td></tr>`;
+      linhas += `<tr><td><b>${escapeHtml(num)}</b></td><td>${escapeHtml(c.nomeMes||'—')}</td><td class="num">${c.lAnt}</td><td class="num">${c.lAtual}</td><td class="num">${c.consumo}</td><td class="num">R$ ${brl(c.valorAgua)}</td></tr>`;
       somaValores += c.valorAgua; somaConsumo += c.consumo; n++;
     } else {
       if(!(c.isOcup && c.u.ceb_cobrar !== false)) return; // só ocupadas marcadas para cobrança
-      linhas += `<tr><td><b>${escapeHtml(num)}</b></td><td>${escapeHtml(c.s.nome||'—')}</td><td class="num">R$ ${brl(c.valorCeb)}</td></tr>`;
+      linhas += `<tr><td><b>${escapeHtml(num)}</b></td><td>${escapeHtml(c.nomeMes||'—')}</td><td class="num">R$ ${brl(c.valorCeb)}</td></tr>`;
       somaValores += c.valorCeb; n++;
     }
   });
@@ -1452,6 +1453,50 @@ function mesAnterior(m){
   return `${y}-${String(mo).padStart(2,'0')}`;
 }
 
+function contratoNoMes(num, m){
+  if(!m) return null;
+  const ini = m + '-01';
+  const [y, mo] = m.split('-').map(Number);
+  const fim = `${y}-${String(mo).padStart(2,'0')}-${String(new Date(y, mo, 0).getDate()).padStart(2,'0')}`;
+  // Contrato vale para o mês se sua vigência tem qualquer interseção com ele
+  return getContratos(num).find(c =>
+    String(c.dataInicio||'') <= fim && (!c.dataFim || String(c.dataFim) >= ini)
+  ) || null;
+}
+
+// Quem era o inquilino da sala NAQUELE mês.
+// Prioridade: contrato cadastrado > registro congelado do mês > nome atual.
+function inquilinoDoMes(num, m){
+  const c = contratoNoMes(num, m);
+  if(c && c.inquilino) return c.inquilino;
+
+  const u = (meses[m] && meses[m].unidades && meses[m].unidades[num]) || {};
+  if(u.inquilino) return u.inquilino;
+
+  const s = salas[num] || {};
+  return s.nome || '—';
+}
+
+// Ajuste manual: usado quando não há contrato cadastrado cobrindo o mês
+function ajustarInquilinoMes(num){
+  const atual = inquilinoDoMes(num, curMonth);
+  const ctr = contratoNoMes(num, curMonth);
+  if(ctr){
+    return alert(`Esta competência já está vinculada ao contrato de ${ctr.inquilino} ` +
+      `(${fmtData(ctr.dataInicio)} → ${ctr.dataFim ? fmtData(ctr.dataFim) : 'em aberto'}).\n\n` +
+      `Para alterar o inquilino deste mês, ajuste as datas do contrato na aba Cadastro → 📄 Contratos.`);
+  }
+  const novo = prompt(
+    `Inquilino da sala ${num} na competência ${formatMonth(curMonth)}:\n\n` +
+    `Isso corrige apenas este mês e não altera o cadastro atual da sala.`, atual === '—' ? '' : atual);
+  if(novo === null) return;
+  garantirMes(curMonth);
+  const u = meses[curMonth].unidades[num];
+  if(!u) return;
+  if(novo.trim() === '') delete u.inquilino; else u.inquilino = novo.trim();
+  salvarDados();
+}
+
 function garantirMes(m){
   let alterouEstrutura = false;
   if(!meses[m]){
@@ -1478,6 +1523,15 @@ function garantirMes(m){
         iptu_cobrar: true, agua_cobrar: true, ceb_cobrar: true, extra_cobrar: true,
         agua_leitura: '', extra_valor: 0, extra_desc: '', pago: false
       };
+      // Congela quem é o inquilino neste mês, para que meses futuros não
+      // reescrevam o histórico quando a sala trocar de locatário.
+      // Só grava para o mês corrente ou futuro: em meses passados criados
+      // agora, o nome atual seria um chute sobre o passado.
+      const mesHoje = new Date().toISOString().slice(0,7);
+      const s = salas[num] || {};
+      if(m >= mesHoje && s.status === 'ocup' && s.nome && s.nome !== 'VAZIA'){
+        meses[m].unidades[num].inquilino = s.nome;
+      }
       alterouEstrutura = true;
     }
   });
@@ -1627,7 +1681,7 @@ function calcularCompetencia(){
       }
     }
 
-    calc[num] = { s, u, lAnt, lAtual, consumo, isOcup, needsReajuste, reajustePróximo, diffMesesReajuste, valorAgua: 0, valorCeb: 0, valorIptu: 0, valorCorretagem: 0 };
+    calc[num] = { s, u, lAnt, lAtual, consumo, isOcup, needsReajuste, reajustePróximo, diffMesesReajuste, nomeMes: inquilinoDoMes(num, curMonth), valorAgua: 0, valorCeb: 0, valorIptu: 0, valorCorretagem: 0 };
   });
 
   // Margem de perda: diferença entre a leitura coletiva (hidrômetro geral) e a soma das leituras individuais
@@ -1741,6 +1795,15 @@ function renderAll(){
     const classAttr = classVazia ? `class="${classVazia}"` : '';
 
     const nomeComBadge = nome + badgeReajuste;
+
+    // Nas abas mensais o nome exibido é o do inquilino DAQUELE mês,
+    // não o atual — senão o histórico de boletos ficaria reescrito.
+    const nomeDoMes = inquilinoDoMes(num, curMonth);
+    const ehHistorico = nomeDoMes !== nome && nomeDoMes !== '—';
+    const marcaHist = ehHistorico
+      ? ` <span class="badge-hist" title="Inquilino que ocupava a sala nesta competência. Atualmente: ${escapeHtml(nome)}">🕐 histórico</span>`
+      : '';
+    const nomeMesComBadge = escapeHtml(nomeDoMes) + marcaHist + (ehHistorico ? '' : badgeReajuste);
     const disableIfNotOcup = isOcup ? '' : 'disabled';
 
     const iptuChk = u.iptu_cobrar !== false;
@@ -1759,18 +1822,18 @@ function renderAll(){
 
     hCad += `<tr ${classAttr}><td><b>${num}</b></td><td>${tag}</td><td>${nomeComBadge}</td><td>${txtInicio} <span style="color:var(--muted);font-size:11px"> (Base: ${txtReajuste})</span></td><td class="num">${brl(s.loc)}</td><td class="num">${brl(s.iptu)}</td><td>${btnReajustar}<button class="btn sm" onclick="abrirContratos('${num}')" title="Contratos em PDF desta sala">📄 Contratos${qtdCtr ? `<span class="badge-ctr">${qtdCtr}</span>` : ''}</button> <button class="btn sm" onclick="openSala('${num}')">Editar</button> <button class="btn sm ghost" style="color:var(--danger); border-color:var(--danger);" onclick="excluirSala('${num}')">Excluir</button></td></tr>`;
 
-    hIptu += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeComBadge}</td><td class="num">${brl(s.iptu)}</td><td class="num">${brl(s.iptu/12)}</td><td class="center"><input type="checkbox" ${iptuChk?'checked':''} onchange="salvarUnit('${num}', 'iptu_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
+    hIptu += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeMesComBadge}</td><td class="num">${brl(s.iptu)}</td><td class="num">${brl(s.iptu/12)}</td><td class="center"><input type="checkbox" ${iptuChk?'checked':''} onchange="salvarUnit('${num}', 'iptu_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
 
-    hAgua += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeComBadge}</td><td class="num">${lAnt}</td><td class="num"><input type="number" class="editable num" value="${u.agua_leitura!==undefined?u.agua_leitura:''}" onchange="salvarUnit('${num}', 'agua_leitura', this.value)" ${disableIfNotOcup}></td><td class="num"><b>${consumo}</b></td><td class="num">R$ ${brl(aguaChk ? valorAgua : 0)}</td><td class="center"><input type="checkbox" ${aguaChk?'checked':''} onchange="salvarUnit('${num}', 'agua_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
+    hAgua += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeMesComBadge}</td><td class="num">${lAnt}</td><td class="num"><input type="number" class="editable num" value="${u.agua_leitura!==undefined?u.agua_leitura:''}" onchange="salvarUnit('${num}', 'agua_leitura', this.value)" ${disableIfNotOcup}></td><td class="num"><b>${consumo}</b></td><td class="num">R$ ${brl(aguaChk ? valorAgua : 0)}</td><td class="center"><input type="checkbox" ${aguaChk?'checked':''} onchange="salvarUnit('${num}', 'agua_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
 
     let cebBase = isOcup && salasParaRateioCeb > 0 ? mDados.globais.ceb / salasParaRateioCeb : 0;
-    hCeb += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeComBadge}</td><td>${tag}</td><td class="num">R$ ${brl(cebChk ? cebBase : 0)}</td><td class="center"><input type="checkbox" ${cebChk?'checked':''} onchange="salvarUnit('${num}', 'ceb_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
+    hCeb += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeMesComBadge}</td><td>${tag}</td><td class="num">R$ ${brl(cebChk ? cebBase : 0)}</td><td class="center"><input type="checkbox" ${cebChk?'checked':''} onchange="salvarUnit('${num}', 'ceb_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
 
-    hExt += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeComBadge}</td><td><input type="text" class="editable" style="width:100%;text-align:left;" value="${u.extra_desc||''}" placeholder="Ex: Manutenção" onchange="salvarUnit('${num}', 'extra_desc', this.value)" ${disableIfNotOcup}></td><td class="num"><input type="text" class="editable num" value="${brl(u.extra_valor)}" onchange="salvarUnit('${num}', 'extra_valor', this.value)" ${disableIfNotOcup}></td><td class="center"><input type="checkbox" ${extChk?'checked':''} onchange="salvarUnit('${num}', 'extra_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
+    hExt += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeMesComBadge}</td><td><input type="text" class="editable" style="width:100%;text-align:left;" value="${u.extra_desc||''}" placeholder="Ex: Manutenção" onchange="salvarUnit('${num}', 'extra_desc', this.value)" ${disableIfNotOcup}></td><td class="num"><input type="text" class="editable num" value="${brl(u.extra_valor)}" onchange="salvarUnit('${num}', 'extra_valor', this.value)" ${disableIfNotOcup}></td><td class="center"><input type="checkbox" ${extChk?'checked':''} onchange="salvarUnit('${num}', 'extra_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
 
     let btnPago = isOcup ? `<button class="btn sm ${u.pago?'primary':''}" onclick="togglePago('${num}')">${u.pago?'✔ Pago':'Pendente'}</button>` : '—';
 
-    hCorr += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeComBadge}</td><td class="num">${brl(s.loc)}</td><td class="num">${brl(valorCorretagem)}</td><td class="center">${btnPago}</td></tr>`;
+    hCorr += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeMesComBadge}</td><td class="num">${brl(s.loc)}</td><td class="num">${brl(valorCorretagem)}</td><td class="center">${btnPago}</td></tr>`;
 
     if(isOcup) {
       tLoc += s.loc; tIptu += valorIptu; tAgua += valorAgua; tCeb += valorCeb;
@@ -1781,7 +1844,7 @@ function renderAll(){
       if(u.pago) tCorretagemTotal += valorCorretagem;
     }
 
-    hRes += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeComBadge}</td><td class="num">${brl(s.loc)}</td><td class="num">${brl(valorIptu)}</td><td class="num">${isOcup ? brl(consumo/100) : '—'}</td><td class="num">${brl(valorAgua)}</td><td class="num">${brl(valorCeb)}</td><td class="num">${brl(extChk ? u.extra_valor : 0)}</td><td class="num"><b>R$ ${brl(total)}</b></td><td class="center">${btnPago}</td></tr>`;
+    hRes += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeMesComBadge} <button class="btn sm ghost" style="padding:1px 6px;font-size:11px;" title="Corrigir o inquilino desta competência" onclick="ajustarInquilinoMes('${num}')">✏️</button></td><td class="num">${brl(s.loc)}</td><td class="num">${brl(valorIptu)}</td><td class="num">${isOcup ? brl(consumo/100) : '—'}</td><td class="num">${brl(valorAgua)}</td><td class="num">${brl(valorCeb)}</td><td class="num">${brl(extChk ? u.extra_valor : 0)}</td><td class="num"><b>R$ ${brl(total)}</b></td><td class="center">${btnPago}</td></tr>`;
   });
 
   if(chaves.length===0){
