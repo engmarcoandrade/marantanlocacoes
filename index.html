@@ -224,6 +224,16 @@
   .ctr-acoes{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;}
   .ctr-vazio{text-align:center;color:var(--muted);padding:24px;font-style:italic;}
   .badge-ctr{font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:var(--brand2);color:#fff;margin-left:5px;}
+  /* ===== Rateio percentual da água ===== */
+  #boxPctAgua{margin:0 0 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .pct-aviso{border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;width:100%;line-height:1.5;}
+  .pct-aviso.ok{background:#ecfdf5;border:1px solid var(--ok);color:#065f46;}
+  .pct-aviso.err{background:#fff7ed;border:1px solid #fdba74;color:#9a3412;}
+  .pct-aviso.auto{background:var(--paper);border:1px solid var(--line);color:var(--muted);font-weight:500;}
+  [data-theme="dark"] .pct-aviso.ok{background:#052e22;color:#6ee7b7;}
+  [data-theme="dark"] .pct-aviso.err{background:#3b2410;color:#fdba74;}
+  input.pct-input{width:80px;}
+  input.pct-input.auto{color:var(--muted);font-style:italic;}
   .badge-hist{font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:10px;background:var(--muted);color:#fff;margin-left:5px;white-space:nowrap;}
   .ctr-alerta{background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:8px;padding:10px 12px;font-size:12.5px;margin-bottom:12px;line-height:1.5;}
   [data-theme="dark"] .ctr-alerta{background:#3b2410;border-color:#9a3412;color:#fdba74;}
@@ -314,8 +324,15 @@
         <label style="margin-right:0;">Modo de Rateio:</label>
         <select id="selModoRateioAgua" onchange="salvarModoRateioAgua(this.value)" style="padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);font-family:var(--sans);font-size:13.5px;">
           <option value="consumo">Por Consumo (leitura individual)</option>
-          <option value="linear">Linear (divisão igualitária)</option>
+          <option value="linear">Linear (percentual por sala)</option>
         </select>
+      </div>
+
+      <div id="boxPctAgua" style="display:none;">
+        <div id="avisoPctAgua"></div>
+        <button class="btn sm" onclick="distribuirPctIgual()" title="Preenche todas as salas marcadas com o mesmo percentual">⚖️ Distribuir igualmente</button>
+        <button class="btn sm" onclick="normalizarPctAgua()" title="Ajusta proporcionalmente os percentuais digitados para somarem exatamente 100%">🎯 Ajustar para 100%</button>
+        <button class="btn sm ghost" onclick="limparPctAgua()" title="Apaga os percentuais e volta à divisão igualitária automática">↺ Limpar percentuais</button>
       </div>
 
       <div id="boxLeituraColetiva" class="global-input" style="display:none;">
@@ -329,7 +346,7 @@
       <div style="overflow-x:auto;">
         <table id="tblAgua">
           <thead><tr>
-            <th>Sala</th><th>Inquilino</th><th class="num">Leitura Ant.</th><th class="num">Leitura Atual</th><th class="num">Consumo</th><th class="num">Rateio (R$)</th><th class="center">Cobrar neste mês?</th>
+            <th>Sala</th><th>Inquilino</th><th class="num">Leitura Ant.</th><th class="num">Leitura Atual</th><th class="num">Consumo</th><th class="num col-pct">% Rateio</th><th class="num">Rateio (R$)</th><th class="center">Cobrar neste mês?</th>
           </tr></thead>
           <tbody></tbody>
           <tfoot></tfoot>
@@ -1051,7 +1068,7 @@ function escapeHtml(s){
 
 function gerarRelatorio(tipo){
   const isAgua = tipo === 'agua';
-  const { calc, totConsumo, modoRateioAgua, perdaConsumo } = calcularCompetencia();
+  const { calc, totConsumo, modoRateioAgua, perdaConsumo, usarPctAgua } = calcularCompetencia();
   const mDados = meses[curMonth];
   const totalFatura = isAgua ? mDados.globais.caesb : mDados.globais.ceb;
 
@@ -1062,17 +1079,20 @@ function gerarRelatorio(tipo){
     if(!confirm('Nenhum print da conta foi colado. Gerar o relatório SEM o comprovante?')) return;
   }
 
+  const modoLinear = isAgua && modoRateioAgua === 'linear';
   const chaves = Object.keys(calc).sort((a,b)=>a.localeCompare(b, undefined, {numeric:true}));
   let linhas = '';
-  let somaValores = 0, somaConsumo = 0, n = 0;
+  let somaValores = 0, somaConsumo = 0, somaPct = 0, n = 0;
 
   chaves.forEach(num => {
     const c = calc[num];
     if(isAgua){
       if(c.u.agua_cobrar === false) return;               // só salas marcadas para cobrança
       if(!c.isOcup && c.consumo === 0 && c.valorAgua === 0) return; // ignora vazias sem movimento
-      linhas += `<tr><td><b>${escapeHtml(num)}</b></td><td>${escapeHtml(c.nomeMes||'—')}</td><td class="num">${c.lAnt}</td><td class="num">${c.lAtual}</td><td class="num">${c.consumo}</td><td class="num">R$ ${brl(c.valorAgua)}</td></tr>`;
-      somaValores += c.valorAgua; somaConsumo += c.consumo; n++;
+      linhas += modoLinear
+        ? `<tr><td><b>${escapeHtml(num)}</b></td><td>${escapeHtml(c.nomeMes||'—')}</td><td class="num">${brl(c.pctAgua)}%</td><td class="num">R$ ${brl(c.valorAgua)}</td></tr>`
+        : `<tr><td><b>${escapeHtml(num)}</b></td><td>${escapeHtml(c.nomeMes||'—')}</td><td class="num">${c.lAnt}</td><td class="num">${c.lAtual}</td><td class="num">${c.consumo}</td><td class="num">R$ ${brl(c.valorAgua)}</td></tr>`;
+      somaValores += c.valorAgua; somaConsumo += c.consumo; somaPct += (c.pctAgua || 0); n++;
     } else {
       if(!(c.isOcup && c.u.ceb_cobrar !== false)) return; // só ocupadas marcadas para cobrança
       linhas += `<tr><td><b>${escapeHtml(num)}</b></td><td>${escapeHtml(c.nomeMes||'—')}</td><td class="num">R$ ${brl(c.valorCeb)}</td></tr>`;
@@ -1094,7 +1114,9 @@ function gerarRelatorio(tipo){
   let infoRateio = '';
   if(isAgua){
     if(modoRateioAgua === 'linear'){
-      infoRateio = `Critério de rateio: <b>divisão linear</b> — o valor total da fatura foi dividido igualmente entre as ${n} sala(s) listada(s).`;
+      infoRateio = usarPctAgua
+        ? `Critério de rateio: <b>percentual definido por sala</b> — a cada unidade foi atribuído um percentual do valor total da fatura, conforme a coluna "% Rateio" abaixo.`
+        : `Critério de rateio: <b>divisão igualitária</b> — o valor total da fatura foi dividido em partes iguais entre as ${n} sala(s) listada(s).`;
     } else {
       infoRateio = `Critério de rateio: <b>proporcional ao consumo individual</b> (leitura atual − leitura anterior de cada hidrômetro).`;
       if(mDados.globais.leituraColetiva !== '' && mDados.globais.leituraColetiva !== undefined && perdaConsumo !== null){
@@ -1105,13 +1127,17 @@ function gerarRelatorio(tipo){
     infoRateio = `Critério de rateio: <b>divisão igualitária</b> do valor total da fatura entre as ${n} sala(s) ocupada(s) com cobrança de energia neste mês.`;
   }
 
-  const cabecTabela = isAgua
-    ? '<tr><th>Sala</th><th>Inquilino</th><th class="num">Leit. Anterior</th><th class="num">Leit. Atual</th><th class="num">Consumo (m³)</th><th class="num">Valor (R$)</th></tr>'
-    : '<tr><th>Sala</th><th>Inquilino</th><th class="num">Valor do Rateio (R$)</th></tr>';
-
-  const rodapeTabela = isAgua
-    ? `<tr class="total"><td colspan="4">TOTAL</td><td class="num">${somaConsumo}</td><td class="num">R$ ${brl(somaValores)}</td></tr>`
-    : `<tr class="total"><td colspan="2">TOTAL</td><td class="num">R$ ${brl(somaValores)}</td></tr>`;
+  let cabecTabela, rodapeTabela;
+  if(modoLinear){
+    cabecTabela  = '<tr><th>Sala</th><th>Inquilino</th><th class="num">% do Rateio</th><th class="num">Valor (R$)</th></tr>';
+    rodapeTabela = `<tr class="total"><td colspan="2">TOTAL</td><td class="num">${brl(somaPct)}%</td><td class="num">R$ ${brl(somaValores)}</td></tr>`;
+  } else if(isAgua){
+    cabecTabela  = '<tr><th>Sala</th><th>Inquilino</th><th class="num">Leit. Anterior</th><th class="num">Leit. Atual</th><th class="num">Consumo (m³)</th><th class="num">Valor (R$)</th></tr>';
+    rodapeTabela = `<tr class="total"><td colspan="4">TOTAL</td><td class="num">${somaConsumo}</td><td class="num">R$ ${brl(somaValores)}</td></tr>`;
+  } else {
+    cabecTabela  = '<tr><th>Sala</th><th>Inquilino</th><th class="num">Valor do Rateio (R$)</th></tr>';
+    rodapeTabela = `<tr class="total"><td colspan="2">TOTAL</td><td class="num">R$ ${brl(somaValores)}</td></tr>`;
+  }
 
   const blocoImagem = comprovantes[tipo]
     ? `<div class="fatura"><div class="fatura-label">Reprodução da fatura ${isAgua ? 'CAESB' : 'CEB'} — competência ${formatMonth(curMonth)}</div><img src="${comprovantes[tipo]}" alt="Fatura"></div>`
@@ -1596,11 +1622,61 @@ function excluirSala(k){
 
 function salvarGlobal(tipo, val){ meses[curMonth].globais[tipo] = parseNum(val); salvarDados(); }
 function salvarModoRateioAgua(modo){ meses[curMonth].globais.modoRateioAgua = modo; salvarDados(); }
+
+// ===== Percentuais do rateio linear =====
+function salasMarcadasAgua(){
+  const u = meses[curMonth].unidades;
+  return Object.keys(salas).filter(num => u[num] && u[num].agua_cobrar !== false);
+}
+
+function distribuirPctIgual(){
+  const lista = salasMarcadasAgua();
+  if(lista.length === 0) return alert('Nenhuma sala marcada para cobrança de água neste mês.');
+  // Distribui 100% e joga o resíduo do arredondamento na primeira sala,
+  // para a soma fechar exatamente em 100%.
+  const base = Math.floor((100 / lista.length) * 100) / 100;
+  const u = meses[curMonth].unidades;
+  lista.forEach(num => { u[num].agua_pct = base; });
+  u[lista[0]].agua_pct = Number((base + (100 - base * lista.length)).toFixed(2));
+  salvarDados();
+}
+
+function normalizarPctAgua(){
+  const lista = salasMarcadasAgua();
+  const u = meses[curMonth].unidades;
+  const soma = lista.reduce((t, num) => t + parseNum(u[num].agua_pct), 0);
+  if(soma <= 0) return alert('Digite ao menos um percentual antes de ajustar para 100%.');
+  if(!confirm(`Os percentuais atuais somam ${brl(soma)}%.\n\nEles serão ajustados proporcionalmente para somar exatamente 100%, mantendo a proporção entre as salas.\n\nConfirma?`)) return;
+
+  let acumulado = 0;
+  lista.forEach((num, i) => {
+    if(i === lista.length - 1){
+      u[num].agua_pct = Number((100 - acumulado).toFixed(2)); // resíduo na última
+    } else {
+      const v = Number((parseNum(u[num].agua_pct) / soma * 100).toFixed(2));
+      u[num].agua_pct = v;
+      acumulado += v;
+    }
+  });
+  salvarDados();
+}
+
+function limparPctAgua(){
+  if(!confirm('Apagar os percentuais digitados e voltar à divisão igualitária automática?')) return;
+  const u = meses[curMonth].unidades;
+  Object.keys(salas).forEach(num => { if(u[num]) delete u[num].agua_pct; });
+  salvarDados();
+}
 function salvarLeituraColetiva(val){ meses[curMonth].globais.leituraColetiva = val === '' ? '' : parseNum(val); salvarDados(); }
 function salvarUnit(num, campo, val){
   if(campo.includes('cobrar')) meses[curMonth].unidades[num][campo] = val;
   else if(campo==='extra_desc') meses[curMonth].unidades[num][campo] = val;
   else if(campo==='agua_leitura') meses[curMonth].unidades[num][campo] = val === '' ? '' : parseNum(val);
+  // Campo vazio no percentual = volta ao automático (não vira zero)
+  else if(campo==='agua_pct'){
+    if(String(val).trim() === '') delete meses[curMonth].unidades[num][campo];
+    else meses[curMonth].unidades[num][campo] = parseNum(val);
+  }
   else meses[curMonth].unidades[num][campo] = parseNum(val);
   salvarDados();
 }
@@ -1638,6 +1714,8 @@ function calcularCompetencia(){
   let totConsumo = 0;
   let ocupadas = 0;
   let salasParaRateioAgua = 0; // contagem de salas marcadas para cobrança de água (usado no modo linear)
+  let totPctAgua = 0;          // soma dos percentuais digitados no modo linear
+  let usarPctAgua = false;     // true quando ao menos uma sala tem percentual manual
   let salasParaRateioCeb = 0;  // contagem de salas ocupadas E marcadas para cobrança de energia
   const taxaCorretagem = mDados.globais.corretagem !== undefined ? mDados.globais.corretagem : 10;
   const modoRateioAgua = mDados.globais.modoRateioAgua || 'consumo';
@@ -1658,7 +1736,16 @@ function calcularCompetencia(){
     if(isOcup) ocupadas++;
 
     const aguaChk = u.agua_cobrar !== false;
-    if (aguaChk) salasParaRateioAgua++;
+    if (aguaChk) {
+      salasParaRateioAgua++;
+      // Percentual manual do rateio linear. Se nenhuma sala tiver percentual
+      // definido, o modo linear continua funcionando como divisão igualitária.
+      const p = u.agua_pct;
+      if (p !== '' && p !== undefined && p !== null) {
+        usarPctAgua = true;
+        totPctAgua += parseNum(p);
+      }
+    }
 
     const cebChk = u.ceb_cobrar !== false;
     if (isOcup && cebChk) salasParaRateioCeb++;
@@ -1696,9 +1783,20 @@ function calcularCompetencia(){
     const cebChk = c.u.ceb_cobrar !== false;
 
     if (modoRateioAgua === 'linear') {
-      c.valorAgua = aguaChk && salasParaRateioAgua > 0 ? (mDados.globais.caesb / salasParaRateioAgua) : 0;
+      if (usarPctAgua) {
+        // Percentual digitado por sala: valor = % × fatura
+        c.pctAgua = aguaChk ? parseNum(c.u.agua_pct) : 0;
+        c.pctAuto = false;
+      } else {
+        // Nenhum percentual definido: divisão igualitária (comportamento padrão)
+        c.pctAgua = aguaChk && salasParaRateioAgua > 0 ? (100 / salasParaRateioAgua) : 0;
+        c.pctAuto = true;
+      }
+      c.valorAgua = (c.pctAgua / 100) * mDados.globais.caesb;
     } else {
       c.valorAgua = aguaChk && totConsumo > 0 ? (c.consumo / totConsumo) * mDados.globais.caesb : 0;
+      c.pctAgua = mDados.globais.caesb > 0 ? (c.valorAgua / mDados.globais.caesb) * 100 : 0;
+      c.pctAuto = true;
     }
 
     c.valorCeb = cebChk && c.isOcup && salasParaRateioCeb > 0 ? (mDados.globais.ceb / salasParaRateioCeb) : 0;
@@ -1710,7 +1808,7 @@ function calcularCompetencia(){
     c.valorCorretagem = c.isOcup ? (c.s.loc * (taxaCorretagem / 100)) : 0;
   });
 
-  return { calc, totConsumo, ocupadas, salasParaRateioAgua, salasParaRateioCeb, modoRateioAgua, perdaConsumo };
+  return { calc, totConsumo, ocupadas, salasParaRateioAgua, salasParaRateioCeb, modoRateioAgua, perdaConsumo, totPctAgua, usarPctAgua };
 }
 
 // ============================================================
@@ -1736,7 +1834,7 @@ function renderAll(){
 
   document.getElementById('mlabel').textContent = formatMonth(curMonth);
   const mDados = meses[curMonth];
-  const { calc, totConsumo, ocupadas, salasParaRateioAgua, salasParaRateioCeb, modoRateioAgua, perdaConsumo } = calcularCompetencia();
+  const { calc, totConsumo, ocupadas, salasParaRateioAgua, salasParaRateioCeb, modoRateioAgua, perdaConsumo, totPctAgua, usarPctAgua } = calcularCompetencia();
 
   document.getElementById('inpCaesbTotal').value = brl(mDados.globais.caesb);
   document.getElementById('inpCebTotal').value = brl(mDados.globais.ceb);
@@ -1748,11 +1846,37 @@ function renderAll(){
   const boxColetiva = document.getElementById('boxLeituraColetiva');
   const hintModo = document.getElementById('hintModoRateio');
 
+  const boxPct = document.getElementById('boxPctAgua');
+
   if (modoRateioAgua === 'linear') {
     boxColetiva.style.display = 'none';
-    hintModo.innerText = `Modo Linear: o valor total da fatura (R$ ${brl(mDados.globais.caesb)}) será dividido igualmente entre as ${salasParaRateioAgua} sala(s) marcada(s) com "Cobrar neste mês?" na tabela abaixo.`;
+    boxPct.style.display = 'flex';
+    hintModo.innerText = `Modo Linear: cada sala recebe um percentual da fatura (R$ ${brl(mDados.globais.caesb)}). Digite os percentuais na coluna "% Rateio" abaixo — eles precisam somar 100%.`;
+
+    const avisoPct = document.getElementById('avisoPctAgua');
+    const fatura = mDados.globais.caesb;
+
+    if (!usarPctAgua) {
+      avisoPct.className = 'pct-aviso auto';
+      avisoPct.innerHTML = `⚖️ <b>Divisão igualitária automática</b> — ${salasParaRateioAgua} sala(s) marcada(s), ` +
+        `${brl(salasParaRateioAgua > 0 ? 100/salasParaRateioAgua : 0)}% cada (R$ ${brl(salasParaRateioAgua > 0 ? fatura/salasParaRateioAgua : 0)}). ` +
+        `Para personalizar, digite o percentual de qualquer sala na coluna "% Rateio".`;
+    } else {
+      const dif = totPctAgua - 100;
+      if (Math.abs(dif) < 0.005) {
+        avisoPct.className = 'pct-aviso ok';
+        avisoPct.innerHTML = `✔ Percentuais somam <b>100,00%</b> — rateio fecha exatamente com a fatura de R$ ${brl(fatura)}.`;
+      } else {
+        const falta = Math.abs(dif);
+        avisoPct.className = 'pct-aviso err';
+        avisoPct.innerHTML = `⚠️ Percentuais somam <b>${brl(totPctAgua)}%</b> — ` +
+          `${dif > 0 ? 'excedem' : 'faltam'} <b>${brl(falta)}%</b> (R$ ${brl(fatura * falta / 100)}). ` +
+          `O rateio ${dif > 0 ? 'está acima' : 'não cobre o total'} da fatura. Use <b>🎯 Ajustar para 100%</b> ou corrija manualmente.`;
+      }
+    }
   } else {
     boxColetiva.style.display = 'inline-block';
+    boxPct.style.display = 'none';
     document.getElementById('inpLeituraColetiva').value = mDados.globais.leituraColetiva !== '' && mDados.globais.leituraColetiva !== undefined ? mDados.globais.leituraColetiva : '';
     hintModo.innerText = `Modo Por Consumo: o valor da fatura é rateado proporcionalmente ao consumo (leitura atual − leitura anterior) de cada sala marcada para cobrança.`;
 
@@ -1824,7 +1948,10 @@ function renderAll(){
 
     hIptu += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeMesComBadge}</td><td class="num">${brl(s.iptu)}</td><td class="num">${brl(s.iptu/12)}</td><td class="center"><input type="checkbox" ${iptuChk?'checked':''} onchange="salvarUnit('${num}', 'iptu_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
 
-    hAgua += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeMesComBadge}</td><td class="num">${lAnt}</td><td class="num"><input type="number" class="editable num" value="${u.agua_leitura!==undefined?u.agua_leitura:''}" onchange="salvarUnit('${num}', 'agua_leitura', this.value)" ${disableIfNotOcup}></td><td class="num"><b>${consumo}</b></td><td class="num">R$ ${brl(aguaChk ? valorAgua : 0)}</td><td class="center"><input type="checkbox" ${aguaChk?'checked':''} onchange="salvarUnit('${num}', 'agua_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
+    const cAgua = calc[num] || {};
+    const pctCell = `<input type="text" class="editable num pct-input ${cAgua.pctAuto ? 'auto' : ''}" value="${cAgua.pctAuto ? brl(cAgua.pctAgua) : brl(parseNum(u.agua_pct))}" title="${cAgua.pctAuto ? 'Calculado automaticamente (divisão igualitária). Digite um valor para personalizar.' : 'Percentual definido manualmente'}" onchange="salvarUnit('${num}', 'agua_pct', this.value)" ${aguaChk ? '' : 'disabled'}>`;
+
+    hAgua += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeMesComBadge}</td><td class="num">${lAnt}</td><td class="num"><input type="number" class="editable num" value="${u.agua_leitura!==undefined?u.agua_leitura:''}" onchange="salvarUnit('${num}', 'agua_leitura', this.value)" ${disableIfNotOcup}></td><td class="num"><b>${consumo}</b></td><td class="num col-pct">${pctCell}</td><td class="num">R$ ${brl(aguaChk ? valorAgua : 0)}</td><td class="center"><input type="checkbox" ${aguaChk?'checked':''} onchange="salvarUnit('${num}', 'agua_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
 
     let cebBase = isOcup && salasParaRateioCeb > 0 ? mDados.globais.ceb / salasParaRateioCeb : 0;
     hCeb += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeMesComBadge}</td><td>${tag}</td><td class="num">R$ ${brl(cebChk ? cebBase : 0)}</td><td class="center"><input type="checkbox" ${cebChk?'checked':''} onchange="salvarUnit('${num}', 'ceb_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
@@ -1884,7 +2011,12 @@ function renderAll(){
   document.querySelector('#tblResumo tbody').innerHTML = hRes;
 
   const modoLabel = modoRateioAgua === 'linear' ? 'LINEAR' : 'POR CONSUMO';
-  document.querySelector('#tblAgua tfoot').innerHTML = `<tr class="total"><td colspan="4">TOTAIS DA COMPETÊNCIA (Modo: ${modoLabel})</td><td class="num">${totConsumo}</td><td class="num">R$ ${brl(mDados.globais.caesb)}</td><td></td></tr>`;
+  document.querySelector('#tblAgua tfoot').innerHTML = `<tr class="total"><td colspan="4">TOTAIS DA COMPETÊNCIA (Modo: ${modoLabel})</td><td class="num">${totConsumo}</td><td class="num col-pct">${brl(modoRateioAgua === 'linear' && !usarPctAgua ? (salasParaRateioAgua > 0 ? 100 : 0) : totPctAgua)}%</td><td class="num">R$ ${brl(mDados.globais.caesb)}</td><td></td></tr>`;
+
+  // A coluna de percentual só faz sentido no modo linear
+  document.querySelectorAll('#tblAgua .col-pct').forEach(el => {
+    el.style.display = modoRateioAgua === 'linear' ? '' : 'none';
+  });
   document.querySelector('#tblCorretagem tfoot').innerHTML = `<tr class="total"><td colspan="3">TOTAL A PAGAR DE CORRETAGEM (Apenas aluguéis recebidos)</td><td class="num" style="color:var(--brand2); font-size:15px;">R$ ${brl(tCorretagemTotal)}</td><td></td></tr>`;
   document.querySelector('#tblResumo tfoot').innerHTML = `<tr class="total"><td colspan="2">TOTAIS (SOMENTE OCUPADAS)</td><td class="num">${brl(tLoc)}</td><td class="num">${brl(tIptu)}</td><td class="num">${brl(tConsumoOcup/100)}</td><td class="num">${brl(tAgua)}</td><td class="num">${brl(tCeb)}</td><td class="num">${brl(tExt)}</td><td class="num" style="color:var(--brand); font-size:15px;">R$ ${brl(tGeral)}</td><td></td></tr>`;
 }
