@@ -494,7 +494,8 @@
     <div class="grid2">
       <div class="fld" style="grid-column:1/3"><label>Inquilino</label><input id="cNome" placeholder="Nome completo"></div>
       <div class="fld"><label>Início da Vigência</label><input type="date" id="cInicio"></div>
-      <div class="fld"><label>Fim da Vigência (deixe vazio se vigente)</label><input type="date" id="cFim"></div>
+      <div class="fld"><label>Término Previsto (prazo do contrato)</label><input type="date" id="cTermino" title="Data prevista no contrato. É só informativa: não encerra o contrato."></div>
+      <div class="fld" style="grid-column:1/3"><label>Data de Saída do Inquilino — preencha SOMENTE se o contrato já foi encerrado</label><input type="date" id="cFim" title="Deixe vazio para contrato vigente. Use para cadastrar contratos antigos já encerrados."></div>
       <div class="fld"><label>Valor da Locação (R$)</label><input class="num" id="cValor" placeholder="800,00"></div>
       <div class="fld"><label>Arquivo PDF do contrato</label><input type="file" id="cArquivo" accept="application/pdf"></div>
       <div class="fld" style="grid-column:1/3"><label>Observações (opcional)</label><input id="cObs" placeholder="Ex: contrato de renovação, fiador, etc."></div>
@@ -879,7 +880,17 @@ async function carregarDaNuvem() {
     meses = dados.meses || {};
 
     setStatus('✔ Nuvem conectada', 'ok');
+    const mig = migrarContratos();
     renderAll();
+    if(mig.mudou){
+      salvarDados();
+      if(mig.corrigidas.length){
+        alert(`Contratos corrigidos automaticamente na(s) sala(s): ${mig.corrigidas.join(', ')}.\n\n` +
+          `O contrato mais recente ficou como vigente, o anterior foi encerrado na véspera do início dele, ` +
+          `e a data de término que estava preenchida passou para o campo "Término previsto".\n\n` +
+          `Confira em Cadastro → 📄 Contratos. Se a data de saída do inquilino anterior não for a correta, ajuste em ✏️ Editar.`);
+      }
+    }
   } catch (erro) {
     setStatus('❌ Erro na conexão', 'err');
     alert('Erro ao conectar com a planilha:\n\n' + erro.message + '\n\nO sistema seguirá com os dados que estavam carregados localmente (se houver).');
@@ -943,6 +954,7 @@ function restaurarBackup(event){
         }
         salas = data.salas;
         meses = data.meses;
+        migrarContratos();
         salvarDados();
         alert('Backup restaurado e sincronização iniciada.');
       } else {
@@ -972,7 +984,7 @@ function exportarExcel(){
     const c = calc[num];
     if (c.isOcup) {
       const statPagamento = c.u.pago ? "Pago" : "Pendente";
-      csv += `"${num}";"${c.nomeMes}";"${brl(c.s.loc)}";"${brl(c.valorIptu)}";"${brl(c.valorAgua)}";"${brl(c.valorCeb)}";"${brl(parseNum(c.u.extra_valor))}";"${brl(c.total)}";"${statPagamento}";"${brl(c.valorCorretagem)}"\n`;
+      csv += `"${num}";"${c.nomeMes}";"${brl(c.loc)}";"${brl(c.valorIptu)}";"${brl(c.valorAgua)}";"${brl(c.valorCeb)}";"${brl(parseNum(c.u.extra_valor))}";"${brl(c.total)}";"${statPagamento}";"${brl(c.valorCorretagem)}"\n`;
     }
   });
 
@@ -1232,8 +1244,122 @@ function getContratos(k){
   return salas[k].contratos;
 }
 
+// Vigente = contrato SEM data de saída (dataFim). O prazo do contrato fica
+// em dataTermino e é só informativo — nunca encerra o contrato sozinho.
 function contratoVigente(k){
   return getContratos(k).find(c => !c.dataFim) || null;
+}
+
+function mesDe(dataISO){ return String(dataISO || '').slice(0,7); }
+function mesSeguinte(m){
+  let [y, mo] = m.split('-').map(Number);
+  mo++; if(mo > 12){ mo = 1; y++; }
+  return `${y}-${String(mo).padStart(2,'0')}`;
+}
+function mesHojeReal(){ return new Date().toISOString().slice(0,7); }
+function vesperaDe(dataISO){
+  const d = new Date(dataISO + 'T12:00:00');
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0,10);
+}
+
+// Congela, nos meses ANTERIORES a mesEfetivo, os dados que hoje são únicos
+// por sala (ocupação, inquilino, valor da locação). Chamado antes de qualquer
+// mudança na sala, para que o histórico de cobranças nunca seja reescrito.
+// Só grava o que ainda não estava congelado.
+function congelarHistorico(num, mesEfetivo){
+  Object.keys(meses).forEach(m => {
+    if(m >= mesEfetivo) return;
+    const u = meses[m] && meses[m].unidades && meses[m].unidades[num];
+    if(!u) return;
+    if(u.loc_mes === undefined) u.loc_mes = locDoMes(num, m);
+    if(typeof u.ocup_mes !== 'boolean') u.ocup_mes = ocupadaNoMes(num, m);
+    if(!u.inquilino){
+      const n = inquilinoDoMes(num, m);
+      if(n && n !== '—' && n !== 'VAZIA') u.inquilino = n;
+    }
+  });
+}
+
+// Ajusta o cadastro atual da sala ao contrato vigente (ou deixa vazia)
+function sincronizarSala(k){
+  const s = salas[k];
+  if(!s) return;
+  const vig = contratoVigente(k);
+  if(vig){
+    s.status = 'ocup';
+    s.nome = vig.inquilino;
+  } else {
+    s.status = 'vazia';
+    s.nome = 'VAZIA';
+  }
+}
+
+// Correção única dos contratos gravados antes da separação prazo × saída.
+// Uma "data de fim" no futuro era, na prática, o prazo do contrato.
+function migrarContratos(){
+  const hoje = new Date().toISOString().slice(0,10);
+  const mh = mesHojeReal();
+  const corrigidas = [];
+  let mudou = false;
+
+  // Passo 0 (uma vez por sala): congela os meses passados com a regra ANTIGA
+  // (status/valor/nome do cadastro atual), que é exatamente o que a tela
+  // mostrava até hoje. Assim a mudança de regra não altera nenhum mês fechado.
+  Object.keys(salas).forEach(k => {
+    const s = salas[k];
+    if(s._histV2) return;
+    Object.keys(meses).forEach(m => {
+      if(m >= mh) return;
+      const u = meses[m] && meses[m].unidades && meses[m].unidades[k];
+      if(!u) return;
+      if(u.loc_mes === undefined) u.loc_mes = Number(s.loc) || 0;
+      if(typeof u.ocup_mes !== 'boolean') u.ocup_mes = s.status === 'ocup';
+      if(!u.inquilino && !contratoNoMes(k, m) && s.status === 'ocup' && s.nome && s.nome !== 'VAZIA'){
+        u.inquilino = s.nome;
+      }
+    });
+    s._histV2 = true;
+    mudou = true;
+  });
+
+  Object.keys(salas).forEach(k => {
+    const arr = Array.isArray(salas[k].contratos) ? salas[k].contratos : [];
+    let afetada = false;
+
+    arr.forEach(c => {
+      if(c._v2) return;
+      if(c.dataTermino === undefined) c.dataTermino = '';
+      if(c.dataFim && c.dataFim > hoje){
+        c.dataTermino = c.dataFim;
+        c.dataFim = '';
+        afetada = true;
+      }
+      c._v2 = true;
+      mudou = true;
+    });
+
+    // Garante um único vigente: os mais antigos encerram na véspera do seguinte
+    const vigentes = arr.filter(c => !c.dataFim)
+      .sort((a,b) => String(a.dataInicio||'').localeCompare(String(b.dataInicio||'')));
+    for(let i = 0; i < vigentes.length - 1; i++){
+      let fim = vesperaDe(vigentes[i+1].dataInicio);
+      if(fim < vigentes[i].dataInicio) fim = vigentes[i].dataInicio;
+      vigentes[i].dataFim = fim;
+      afetada = true;
+      mudou = true;
+    }
+
+    if(afetada){
+      const vig = contratoVigente(k);
+      if(vig) congelarHistorico(k, mesDe(vig.dataInicio));
+      sincronizarSala(k);
+      if(vig && parseNum(vig.valor) > 0) salas[k].loc = parseNum(vig.valor);
+      corrigidas.push(k);
+    }
+  });
+
+  return { mudou, corrigidas };
 }
 
 function fmtData(d){
@@ -1273,14 +1399,16 @@ function renderContratos(){
       ? `<a class="btn sm" href="${escapeHtml(c.arquivoUrl)}" target="_blank" rel="noopener">📄 Abrir PDF</a>`
       : `<span class="hint" style="margin:0;font-size:12px;">Sem PDF anexado</span>`;
     const encerrar = vigente
-      ? `<button class="btn sm" style="color:var(--accent);border-color:var(--accent);" onclick="encerrarContrato('${c.id}')">🚪 Encerrar</button>`
+      ? `<button class="btn sm" style="color:var(--accent);border-color:var(--accent);" onclick="encerrarContrato('${c.id}')" title="Registra a saída do inquilino e deixa a sala vazia a partir do mês seguinte">🚪 Encerrar contrato</button>`
       : '';
+    const prazo = c.dataTermino ? fmtData(c.dataTermino) : 'sem prazo informado';
     return `<div class="ctr-item ${vigente ? 'vigente' : 'encerrado'}">
       <div class="ctr-top">
         <div>
           <div class="ctr-nome">${escapeHtml(c.inquilino || '—')}</div>
           <div class="ctr-meta">
-            Vigência: <b>${fmtData(c.dataInicio)}</b> → <b>${c.dataFim ? fmtData(c.dataFim) : 'em aberto'}</b><br>
+            Início: <b>${fmtData(c.dataInicio)}</b> · Término previsto: <b>${prazo}</b><br>
+            ${vigente ? 'Situação: <b>em vigor</b>' : `Saída do inquilino: <b>${fmtData(c.dataFim)}</b>`}<br>
             Locação: <b>R$ ${brl(c.valor)}</b>${c.arquivoNome ? ' · Arquivo: ' + escapeHtml(c.arquivoNome) : ''}
             ${c.obs ? '<br>Obs.: ' + escapeHtml(c.obs) : ''}
           </div>
@@ -1289,6 +1417,7 @@ function renderContratos(){
       </div>
       <div class="ctr-acoes">
         ${arq}
+        <button class="btn sm" onclick="editarContrato('${c.id}')">✏️ Editar</button>
         ${encerrar}
         <button class="btn sm" style="color:var(--danger);border-color:var(--danger);" onclick="excluirContrato('${c.id}')">🗑 Excluir</button>
       </div>
@@ -1296,41 +1425,90 @@ function renderContratos(){
   }).join('');
 }
 
+let contratoEditando = null;
+
+function preencherFormContrato(c){
+  document.getElementById('cNome').value    = c.inquilino || '';
+  document.getElementById('cInicio').value  = c.dataInicio || '';
+  document.getElementById('cTermino').value = c.dataTermino || '';
+  document.getElementById('cFim').value     = c.dataFim || '';
+  document.getElementById('cValor').value   = brl(c.valor || 0);
+  document.getElementById('cObs').value     = c.obs || '';
+  document.getElementById('cArquivo').value = '';
+}
+
 function novoContrato(){
   const k = salaContratoAtual;
   const s = salas[k] || {};
   const vig = contratoVigente(k);
+  contratoEditando = null;
 
   document.getElementById('dlgNovoContratoTitle').innerText = `Novo Contrato — Sala ${k}`;
+  document.getElementById('btnSalvarContrato').innerText = 'Salvar Contrato';
   document.getElementById('avisoVigente').innerHTML = vig
-    ? `<div class="ctr-alerta">⚠️ A sala já tem um contrato vigente de <b>${escapeHtml(vig.inquilino||'—')}</b> (desde ${fmtData(vig.dataInicio)}).<br>Ao salvar este novo contrato, aquele será <b>encerrado automaticamente</b> na véspera do início deste. O histórico é preservado.</div>`
+    ? `<div class="ctr-alerta">⚠️ A sala tem contrato vigente de <b>${escapeHtml(vig.inquilino||'—')}</b> (desde ${fmtData(vig.dataInicio)}).<br>Ao salvar, esse contrato será <b>encerrado automaticamente</b> na véspera do início do novo, e a sala passa para o novo inquilino. Os meses anteriores continuam no nome de ${escapeHtml(vig.inquilino||'—')}.</div>`
     : '';
 
-  document.getElementById('cNome').value = vig ? '' : (s.nome && s.nome !== 'VAZIA' ? s.nome : '');
-  document.getElementById('cInicio').value = '';
-  document.getElementById('cFim').value = '';
-  document.getElementById('cValor').value = brl(s.loc || 0);
-  document.getElementById('cObs').value = '';
-  document.getElementById('cArquivo').value = '';
+  preencherFormContrato({
+    inquilino: vig ? '' : (s.nome && s.nome !== 'VAZIA' ? s.nome : ''),
+    valor: s.loc || 0
+  });
+  dlgNovoContrato.showModal();
+}
+
+function editarContrato(id){
+  const k = salaContratoAtual;
+  const c = getContratos(k).find(x => x.id === id);
+  if(!c) return;
+  contratoEditando = id;
+
+  document.getElementById('dlgNovoContratoTitle').innerText = `Editar Contrato — Sala ${k}`;
+  document.getElementById('btnSalvarContrato').innerText = 'Salvar Alterações';
+  document.getElementById('avisoVigente').innerHTML =
+    `<div class="ctr-alerta">✏️ Editando o contrato de <b>${escapeHtml(c.inquilino||'—')}</b>. ` +
+    `Preencher a <b>Data de Saída</b> encerra o contrato; apagá-la reabre o contrato (só é permitido se não houver outro vigente). ` +
+    `Escolha um PDF apenas se quiser substituir o arquivo atual.</div>`;
+
+  preencherFormContrato(c);
   dlgNovoContrato.showModal();
 }
 
 async function salvarContrato(){
   const k = salaContratoAtual;
-  const nome = document.getElementById('cNome').value.trim();
-  const inicio = document.getElementById('cInicio').value;
-  const fim = document.getElementById('cFim').value;
-  const valor = parseNum(document.getElementById('cValor').value);
-  const obs = document.getElementById('cObs').value.trim();
-  const file = document.getElementById('cArquivo').files[0];
+  const s = salas[k];
+  const nome    = document.getElementById('cNome').value.trim();
+  const inicio  = document.getElementById('cInicio').value;
+  const termino = document.getElementById('cTermino').value;
+  const fim     = document.getElementById('cFim').value;   // data de saída real
+  const valor   = parseNum(document.getElementById('cValor').value);
+  const obs     = document.getElementById('cObs').value.trim();
+  const file    = document.getElementById('cArquivo').files[0];
 
   if(!nome)   return alert('Informe o nome do inquilino.');
   if(!inicio) return alert('Informe a data de início da vigência.');
-  if(fim && fim < inicio) return alert('O fim da vigência não pode ser anterior ao início.');
+  if(termino && termino < inicio) return alert('O término previsto não pode ser anterior ao início.');
+  if(fim && fim < inicio) return alert('A data de saída não pode ser anterior ao início.');
+
+  const arr = getContratos(k);
+  const editando = contratoEditando ? arr.find(x => x.id === contratoEditando) : null;
+  if(contratoEditando && !editando) return alert('Contrato não encontrado.');
+
+  // Regra: nunca dois contratos vigentes na mesma sala
+  const vigAtual = contratoVigente(k);
+  if(!fim){
+    if(editando && vigAtual && vigAtual !== editando){
+      return alert(`Já existe um contrato vigente nesta sala (${vigAtual.inquilino}).\n\n` +
+        `Para reabrir este contrato, informe antes a data de saída do contrato vigente (✏️ Editar ou 🚪 Encerrar contrato).`);
+    }
+    if(!editando && vigAtual && inicio <= vigAtual.dataInicio){
+      return alert(`O novo contrato precisa começar depois do início do contrato vigente de ${vigAtual.inquilino} (${fmtData(vigAtual.dataInicio)}).\n\n` +
+        `Se quiser cadastrar um contrato antigo, preencha também a Data de Saída dele.`);
+    }
+  }
 
   const btn = document.getElementById('btnSalvarContrato');
   const st  = document.getElementById('cStatusUpload');
-  let arquivo = { id:'', url:'', nome:'' };
+  let arquivo = null;
 
   if(file){
     if(file.type !== 'application/pdf'){
@@ -1350,27 +1528,75 @@ async function salvarContrato(){
     btn.disabled = false;
   }
 
-  // Encerra o contrato vigente anterior na véspera do início deste
-  const vig = contratoVigente(k);
-  if(vig && !fim){
-    const d = new Date(inicio + 'T12:00:00');
-    d.setDate(d.getDate() - 1);
-    vig.dataFim = d.toISOString().slice(0,10);
-    if(vig.dataFim < vig.dataInicio) vig.dataFim = vig.dataInicio;
+  if(editando){
+    const eraVigente = !editando.dataFim;
+    // Encerrando agora: guarda o valor de locação praticado até a saída
+    if(eraVigente && fim) editando.valorFinal = Number(s.loc) || 0;
+
+    editando.inquilino   = nome;
+    editando.dataInicio  = inicio;
+    editando.dataTermino = termino;
+    editando.dataFim     = fim || '';
+    editando.valor       = valor;
+    editando.obs         = obs;
+    editando._v2         = true;
+    if(arquivo){
+      editando.arquivoId = arquivo.id; editando.arquivoUrl = arquivo.url; editando.arquivoNome = arquivo.nome;
+    }
+
+    const ficouVigente = !fim;
+    if(eraVigente && !ficouVigente){
+      // Encerrado pela edição: sala vazia a partir do mês seguinte à saída
+      congelarHistorico(k, mesSeguinte(mesDe(fim)));
+      sincronizarSala(k);
+    } else if(!eraVigente && ficouVigente){
+      // Reaberto: volta a ser o contrato da sala
+      congelarHistorico(k, mesDe(inicio));
+      const v = (editando.valorFinal !== undefined && editando.valorFinal !== null) ? Number(editando.valorFinal) : valor;
+      delete editando.valorFinal;
+      sincronizarSala(k);
+      if(v > 0) s.loc = v;
+      s.dataInicio = mesDe(inicio);
+      if(s.ultimoReajuste && s.ultimoReajuste < s.dataInicio) s.ultimoReajuste = '';
+    } else if(ficouVigente){
+      sincronizarSala(k); // atualiza o nome se ele foi corrigido
+    }
+  } else {
+    const novo = {
+      id: 'c' + Date.now() + Math.random().toString(36).slice(2,7),
+      inquilino: nome,
+      dataInicio: inicio,
+      dataTermino: termino,
+      dataFim: fim || '',
+      valor: valor,
+      obs: obs,
+      arquivoId:   arquivo ? arquivo.id   : '',
+      arquivoUrl:  arquivo ? arquivo.url  : '',
+      arquivoNome: arquivo ? arquivo.nome : '',
+      _v2: true
+    };
+
+    if(!fim){
+      // Novo contrato vigente: encerra o anterior na véspera e assume a sala
+      if(vigAtual){
+        vigAtual.valorFinal = Number(s.loc) || 0;
+        let f = vesperaDe(inicio);
+        if(f < vigAtual.dataInicio) f = vigAtual.dataInicio;
+        vigAtual.dataFim = f;
+      }
+      arr.push(novo);
+      congelarHistorico(k, mesDe(inicio));
+      sincronizarSala(k);
+      if(valor > 0) s.loc = valor;
+      s.dataInicio = mesDe(inicio);   // base do reajuste do novo inquilino
+      s.ultimoReajuste = '';
+    } else {
+      // Contrato antigo, já encerrado: entra só no histórico
+      arr.push(novo);
+    }
   }
 
-  getContratos(k).push({
-    id: 'c' + Date.now() + Math.random().toString(36).slice(2,7),
-    inquilino: nome,
-    dataInicio: inicio,
-    dataFim: fim || '',
-    valor: valor,
-    obs: obs,
-    arquivoId: arquivo.id,
-    arquivoUrl: arquivo.url,
-    arquivoNome: arquivo.nome
-  });
-
+  contratoEditando = null;
   dlgNovoContrato.close();
   st.innerHTML = 'O PDF é enviado para a pasta <b>“Contratos - Locacoes V6”</b> no seu Google Drive. No sistema fica gravado apenas o link do arquivo.';
   renderContratos();
@@ -1415,15 +1641,37 @@ function enviarPdfDrive(file, sala, inquilino){
   });
 }
 
+// Aceita DD/MM/AAAA ou AAAA-MM-DD; devolve AAAA-MM-DD ou null
+function lerDataBR(txt){
+  const t = String(txt || '').trim();
+  let m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? t : null;
+}
+
 function encerrarContrato(id){
-  const c = getContratos(salaContratoAtual).find(x => x.id === id);
-  if(!c) return;
+  const k = salaContratoAtual;
+  const c = getContratos(k).find(x => x.id === id);
+  if(!c || c.dataFim) return;
+
   const hoje = new Date().toISOString().slice(0,10);
-  const data = prompt('Data de encerramento do contrato (AAAA-MM-DD):', hoje);
-  if(!data) return;
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(data)) return alert('Data inválida. Use o formato AAAA-MM-DD.');
-  if(data < c.dataInicio) return alert('O encerramento não pode ser anterior ao início da vigência.');
+  const txt = prompt(`Data de saída de ${c.inquilino} (DD/MM/AAAA):`, fmtData(hoje));
+  if(txt === null) return;
+  const data = lerDataBR(txt);
+  if(!data) return alert('Data inválida. Use o formato DD/MM/AAAA.');
+  if(data < c.dataInicio) return alert('A saída não pode ser anterior ao início do contrato.');
+
+  const mesSaida = mesDe(data);
+  const mesVazia = mesSeguinte(mesSaida);
+  if(!confirm(`Encerrar o contrato de ${c.inquilino} com saída em ${fmtData(data)}?\n\n` +
+    `• A sala ${k} fica VAZIA a partir de ${formatMonth(mesVazia)}.\n` +
+    `• Até ${formatMonth(mesSaida)}, os meses continuam no nome de ${c.inquilino}, com os valores já lançados.`)) return;
+
+  c.valorFinal = Number(salas[k].loc) || 0;   // valor praticado até a saída
   c.dataFim = data;
+  congelarHistorico(k, mesVazia);
+  sincronizarSala(k);
   renderContratos();
   salvarDados();
 }
@@ -1434,7 +1682,13 @@ async function excluirContrato(id){
   if(i < 0) return;
   const c = arr[i];
 
-  if(!confirm(`Excluir o contrato de ${c.inquilino}?\n\nIsso remove o registro do histórico desta sala.`)) return;
+  if(!confirm(`Excluir o contrato de ${c.inquilino}?\n\nIsso remove o registro do histórico desta sala. ` +
+    `Os meses já passados mantêm o inquilino e os valores lançados.` +
+    (!c.dataFim ? `\n\nComo este é o contrato vigente, a sala ficará VAZIA.` : ''))) return;
+
+  // Protege os meses passados antes de remover o contrato que os sustentava
+  congelarHistorico(salaContratoAtual, mesHojeReal());
+  const eraVigente = !c.dataFim;
 
   if(c.arquivoId){
     if(confirm('Deseja também mover o PDF para a lixeira do Google Drive?\n\nOK = apaga o PDF do Drive\nCancelar = mantém o arquivo no Drive')){
@@ -1450,6 +1704,7 @@ async function excluirContrato(id){
   }
 
   arr.splice(i, 1);
+  if(eraVigente) sincronizarSala(salaContratoAtual);
   renderContratos();
   salvarDados();
 }
@@ -1484,19 +1739,56 @@ function contratoNoMes(num, m){
   const ini = m + '-01';
   const [y, mo] = m.split('-').map(Number);
   const fim = `${y}-${String(mo).padStart(2,'0')}-${String(new Date(y, mo, 0).getDate()).padStart(2,'0')}`;
-  // Contrato vale para o mês se sua vigência tem qualquer interseção com ele
-  return getContratos(num).find(c =>
-    String(c.dataInicio||'') <= fim && (!c.dataFim || String(c.dataFim) >= ini)
-  ) || null;
+  // Contrato vale para o mês se sua vigência tem qualquer interseção com ele.
+  // Na troca dentro do mesmo mês, prevalece o que começou primeiro (o que saiu).
+  if(!salas[num]) return null;
+  return getContratos(num)
+    .filter(c => String(c.dataInicio||'') <= fim && (!c.dataFim || String(c.dataFim) >= ini))
+    .sort((a,b) => String(a.dataInicio||'').localeCompare(String(b.dataInicio||'')))[0] || null;
+}
+
+function unidadeDoMes(num, m){
+  return (meses[m] && meses[m].unidades && meses[m].unidades[num]) || {};
+}
+
+// A sala estava ocupada NAQUELE mês?
+// Prioridade: contrato cobrindo o mês > situação congelada do mês >
+// (sala com contratos e mês sem contrato = vazia) > status atual.
+function ocupadaNoMes(num, m){
+  if(contratoNoMes(num, m)) return true;
+  const u = unidadeDoMes(num, m);
+  if(typeof u.ocup_mes === 'boolean') return u.ocup_mes;
+  const s = salas[num] || {};
+  const ctrs = getContratos(num);
+  if(ctrs.length){
+    const primeiro = ctrs.map(c => c.dataInicio || '').filter(Boolean).sort()[0] || '';
+    if(primeiro && m >= mesDe(primeiro)) return false;
+  }
+  return s.status === 'ocup';
+}
+
+// Valor da locação cobrado NAQUELE mês.
+// Prioridade: valor congelado do mês > valor final do contrato já encerrado > valor atual.
+function locDoMes(num, m){
+  const u = unidadeDoMes(num, m);
+  if(u.loc_mes !== undefined && u.loc_mes !== null && u.loc_mes !== '') return Number(u.loc_mes) || 0;
+  const c = contratoNoMes(num, m);
+  if(c && c.dataFim){
+    if(c.valorFinal !== undefined && c.valorFinal !== null) return Number(c.valorFinal) || 0;
+    if(parseNum(c.valor) > 0) return parseNum(c.valor);
+  }
+  return Number((salas[num] || {}).loc) || 0;
 }
 
 // Quem era o inquilino da sala NAQUELE mês.
-// Prioridade: contrato cadastrado > registro congelado do mês > nome atual.
+// Prioridade: contrato cadastrado > registro congelado do mês > (vazia) > nome atual.
 function inquilinoDoMes(num, m){
   const c = contratoNoMes(num, m);
   if(c && c.inquilino) return c.inquilino;
 
-  const u = (meses[m] && meses[m].unidades && meses[m].unidades[num]) || {};
+  if(!ocupadaNoMes(num, m)) return 'VAZIA';
+
+  const u = unidadeDoMes(num, m);
   if(u.inquilino) return u.inquilino;
 
   const s = salas[num] || {};
@@ -1583,10 +1875,30 @@ function salvarNovaSala(){
   if(!editKey && salas[k]) return alert(`Já existe uma sala cadastrada com o número "${k}".`);
 
   const leituraInicial = parseNum(sLeit.value);
-  const contratosExistentes = (salas[k] && Array.isArray(salas[k].contratos)) ? salas[k].contratos : [];
+  const anterior = salas[k] || null;
+  const contratosExistentes = (anterior && Array.isArray(anterior.contratos)) ? anterior.contratos : [];
+
+  const novoStatus = sStatus.value;
+  const novoNome = novoStatus === 'vazia' ? 'VAZIA' : sNome.value.trim();
+  const novoLoc = parseNum(sLoc.value);
+
+  if(anterior){
+    const vig = contratoVigente(k);
+    if(vig && novoStatus === 'vazia'){
+      return alert(`A sala ${k} tem contrato vigente de ${vig.inquilino}.\n\n` +
+        `Para desocupar a sala, use 📄 Contratos → 🚪 Encerrar contrato. Assim o histórico fica correto.`);
+    }
+    // Mudou inquilino, valor ou situação: congela os meses passados antes
+    if(anterior.status !== novoStatus || anterior.nome !== novoNome || Number(anterior.loc) !== novoLoc){
+      congelarHistorico(k, mesHojeReal());
+    }
+    // Correção de nome com contrato vigente: mantém o contrato coerente
+    if(vig && novoNome && vig.inquilino !== novoNome) vig.inquilino = novoNome;
+  }
 
   salas[k] = {
-    status: sStatus.value,
+    ...(anterior || {}),
+    status: novoStatus,
     nome: sStatus.value === 'vazia' ? 'VAZIA' : sNome.value.trim(),
     loc: parseNum(sLoc.value),
     iptu: parseNum(sIptu.value),
@@ -1732,7 +2044,9 @@ function calcularCompetencia(){
     const consumo = Math.max(0, lAtual - lAnt);
     totConsumo += consumo;
 
-    const isOcup = s.status === 'ocup';
+    // Ocupação e valor da locação são os DAQUELE mês (histórico preservado)
+    const isOcup = ocupadaNoMes(num, curMonth);
+    const loc = locDoMes(num, curMonth);
     if(isOcup) ocupadas++;
 
     const aguaChk = u.agua_cobrar !== false;
@@ -1768,7 +2082,7 @@ function calcularCompetencia(){
       }
     }
 
-    calc[num] = { s, u, lAnt, lAtual, consumo, isOcup, needsReajuste, reajustePróximo, diffMesesReajuste, nomeMes: inquilinoDoMes(num, curMonth), valorAgua: 0, valorCeb: 0, valorIptu: 0, valorCorretagem: 0 };
+    calc[num] = { s, u, loc, lAnt, lAtual, consumo, isOcup, needsReajuste, reajustePróximo, diffMesesReajuste, nomeMes: inquilinoDoMes(num, curMonth), valorAgua: 0, valorCeb: 0, valorIptu: 0, valorCorretagem: 0 };
   });
 
   // Margem de perda: diferença entre a leitura coletiva (hidrômetro geral) e a soma das leituras individuais
@@ -1803,9 +2117,9 @@ function calcularCompetencia(){
     c.valorIptu = c.u.iptu_cobrar ? (c.s.iptu / 12) : 0;
 
     let valorExtra = c.u.extra_cobrar ? parseNum(c.u.extra_valor) : 0;
-    c.total = c.isOcup ? (c.s.loc + c.valorIptu + c.valorAgua + c.valorCeb + valorExtra) : 0;
+    c.total = c.isOcup ? (c.loc + c.valorIptu + c.valorAgua + c.valorCeb + valorExtra) : 0;
 
-    c.valorCorretagem = c.isOcup ? (c.s.loc * (taxaCorretagem / 100)) : 0;
+    c.valorCorretagem = c.isOcup ? (c.loc * (taxaCorretagem / 100)) : 0;
   });
 
   return { calc, totConsumo, ocupadas, salasParaRateioAgua, salasParaRateioCeb, modoRateioAgua, perdaConsumo, totPctAgua, usarPctAgua };
@@ -1897,8 +2211,10 @@ function renderAll(){
   const chaves = Object.keys(salas).sort((a,b)=>a.localeCompare(b, undefined, {numeric:true}));
 
   chaves.forEach(num => {
-    const { s, u, lAnt, consumo, isOcup, needsReajuste, reajustePróximo, valorAgua, valorCeb, valorIptu, valorCorretagem, total } = calc[num];
+    const { s, u, loc, lAnt, consumo, isOcup, needsReajuste, reajustePróximo, valorAgua, valorCeb, valorIptu, valorCorretagem, total } = calc[num];
     const tag = isOcup ? '<span class="tag ocup">Ocupada</span>' : '<span class="tag vazia">Vazia</span>';
+    // Na aba Cadastro vale a situação ATUAL da sala, não a do mês em exibição
+    const tagAtual = s.status === 'ocup' ? '<span class="tag ocup">Ocupada</span>' : '<span class="tag vazia">Vazia</span>';
     const nome = s.nome || '—';
     const visivel = passaFiltro(num, nome);
     if (visivel) visiveis++;
@@ -1923,7 +2239,7 @@ function renderAll(){
     // Nas abas mensais o nome exibido é o do inquilino DAQUELE mês,
     // não o atual — senão o histórico de boletos ficaria reescrito.
     const nomeDoMes = inquilinoDoMes(num, curMonth);
-    const ehHistorico = nomeDoMes !== nome && nomeDoMes !== '—';
+    const ehHistorico = nomeDoMes !== nome && nomeDoMes !== '—' && nomeDoMes !== 'VAZIA';
     const marcaHist = ehHistorico
       ? ` <span class="badge-hist" title="Inquilino que ocupava a sala nesta competência. Atualmente: ${escapeHtml(nome)}">🕐 histórico</span>`
       : '';
@@ -1944,7 +2260,7 @@ function renderAll(){
       ? `<button class="btn sm" style="color:var(--ok);border-color:var(--ok);" onclick="marcarReajustado('${num}')" title="Marca o mês atual como último reajuste">✔ Marcar Reajustado</button> `
       : '';
 
-    hCad += `<tr ${classAttr}><td><b>${num}</b></td><td>${tag}</td><td>${nomeComBadge}</td><td>${txtInicio} <span style="color:var(--muted);font-size:11px"> (Base: ${txtReajuste})</span></td><td class="num">${brl(s.loc)}</td><td class="num">${brl(s.iptu)}</td><td>${btnReajustar}<button class="btn sm" onclick="abrirContratos('${num}')" title="Contratos em PDF desta sala">📄 Contratos${qtdCtr ? `<span class="badge-ctr">${qtdCtr}</span>` : ''}</button> <button class="btn sm" onclick="openSala('${num}')">Editar</button> <button class="btn sm ghost" style="color:var(--danger); border-color:var(--danger);" onclick="excluirSala('${num}')">Excluir</button></td></tr>`;
+    hCad += `<tr ${classAttr}><td><b>${num}</b></td><td>${tagAtual}</td><td>${nomeComBadge}</td><td>${txtInicio} <span style="color:var(--muted);font-size:11px"> (Base: ${txtReajuste})</span></td><td class="num">${brl(s.loc)}</td><td class="num">${brl(s.iptu)}</td><td>${btnReajustar}<button class="btn sm" onclick="abrirContratos('${num}')" title="Contratos em PDF desta sala">📄 Contratos${qtdCtr ? `<span class="badge-ctr">${qtdCtr}</span>` : ''}</button> <button class="btn sm" onclick="openSala('${num}')">Editar</button> <button class="btn sm ghost" style="color:var(--danger); border-color:var(--danger);" onclick="excluirSala('${num}')">Excluir</button></td></tr>`;
 
     hIptu += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeMesComBadge}</td><td class="num">${brl(s.iptu)}</td><td class="num">${brl(s.iptu/12)}</td><td class="center"><input type="checkbox" ${iptuChk?'checked':''} onchange="salvarUnit('${num}', 'iptu_cobrar', this.checked)" ${disableIfNotOcup}></td></tr>`;
 
@@ -1960,10 +2276,10 @@ function renderAll(){
 
     let btnPago = isOcup ? `<button class="btn sm ${u.pago?'primary':''}" onclick="togglePago('${num}')">${u.pago?'✔ Pago':'Pendente'}</button>` : '—';
 
-    hCorr += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeMesComBadge}</td><td class="num">${brl(s.loc)}</td><td class="num">${brl(valorCorretagem)}</td><td class="center">${btnPago}</td></tr>`;
+    hCorr += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeMesComBadge}</td><td class="num">${brl(loc)}</td><td class="num">${brl(valorCorretagem)}</td><td class="center">${btnPago}</td></tr>`;
 
     if(isOcup) {
-      tLoc += s.loc; tIptu += valorIptu; tAgua += valorAgua; tCeb += valorCeb;
+      tLoc += loc; tIptu += valorIptu; tAgua += valorAgua; tCeb += valorCeb;
       tConsumoOcup += consumo;
       let valorExtra = extChk ? parseNum(u.extra_valor) : 0;
       tExt += valorExtra; tGeral += total;
@@ -1971,7 +2287,7 @@ function renderAll(){
       if(u.pago) tCorretagemTotal += valorCorretagem;
     }
 
-    hRes += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeMesComBadge} <button class="btn sm ghost" style="padding:1px 6px;font-size:11px;" title="Corrigir o inquilino desta competência" onclick="ajustarInquilinoMes('${num}')">✏️</button></td><td class="num">${brl(s.loc)}</td><td class="num">${brl(valorIptu)}</td><td class="num">${isOcup ? brl(consumo/100) : '—'}</td><td class="num">${brl(valorAgua)}</td><td class="num">${brl(valorCeb)}</td><td class="num">${brl(extChk ? u.extra_valor : 0)}</td><td class="num"><b>R$ ${brl(total)}</b></td><td class="center">${btnPago}</td></tr>`;
+    hRes += `<tr ${classAttr}><td><b>${num}</b></td><td>${nomeMesComBadge} <button class="btn sm ghost" style="padding:1px 6px;font-size:11px;" title="Corrigir o inquilino desta competência" onclick="ajustarInquilinoMes('${num}')">✏️</button></td><td class="num">${brl(loc)}</td><td class="num">${brl(valorIptu)}</td><td class="num">${isOcup ? brl(consumo/100) : '—'}</td><td class="num">${brl(valorAgua)}</td><td class="num">${brl(valorCeb)}</td><td class="num">${brl(extChk ? u.extra_valor : 0)}</td><td class="num"><b>R$ ${brl(total)}</b></td><td class="center">${btnPago}</td></tr>`;
   });
 
   if(chaves.length===0){
